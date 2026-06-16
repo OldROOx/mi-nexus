@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godot 3D · de cero a experto</title>
+<style>
+  :root{
+    --bg:#15171c; --panel:#1e2229; --panel2:#262b34; --line:#333a45;
+    --txt:#e6e9ef; --muted:#9aa3b2; --accent:#478cbf; --accent2:#5fb8ff;
+    --green:#5cc88a; --red:#e2706f; --yellow:#e6c068; --purple:#cf9aff;
+    --kw:#ff7085; --str:#b8e986; --num:#e6c068; --com:#6a7488; --fn:#5fb8ff; --type:#e6c068;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--sans);display:flex;overflow:hidden}
+
+  /* SIDEBAR */
+  #sidebar{width:310px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0}
+  #sidebar header{padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+  #sidebar header h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+  #sidebar header h1 .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent2)}
+  #sidebar header p{font-size:11px;color:var(--muted);margin-top:4px}
+  #progressbar{height:5px;background:var(--panel2);border-radius:4px;margin-top:12px;overflow:hidden}
+  #progressfill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .4s}
+  #progresstext{font-size:10.5px;color:var(--muted);margin-top:5px}
+  #lessonlist{overflow-y:auto;flex:1;padding:6px 0}
+  .module-title{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent2);padding:14px 18px 6px;font-weight:700;opacity:.85}
+  .lesson{padding:8px 16px 8px 20px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:9px;border-left:3px solid transparent;transition:background .15s}
+  .lesson:hover{background:var(--panel2)}
+  .lesson.active{background:var(--panel2);border-left-color:var(--accent2)}
+  .lesson .check{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px}
+  .lesson.done .check{background:var(--green);border-color:var(--green);color:#10311e}
+  .lesson .pct{margin-left:auto;font-size:10px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1px 7px;min-width:38px;text-align:center}
+  .lesson.done .pct{color:var(--green);border-color:#2c5a3e}
+
+  /* MAIN */
+  #main{flex:1;display:flex;flex-direction:column;min-width:0}
+  #topbar{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:12px;background:var(--panel);flex-shrink:0}
+  #topbar .title{font-size:13px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:11.5px;padding:5px 11px;border-radius:6px;cursor:pointer}
+  #topbar button:hover{border-color:var(--accent)}
+
+  #workarea{flex:1;display:flex;min-height:0}
+
+  /* LESSON PANE */
+  #lessonpane{width:34%;overflow-y:auto;padding:22px 24px;border-right:1px solid var(--line);min-width:0}
+  #lessonpane h2{font-size:19px;margin-bottom:3px;line-height:1.25}
+  #lessonpane .subtitle{color:var(--muted);font-size:11.5px;margin-bottom:16px}
+  #lessonpane p{font-size:13.5px;line-height:1.62;margin:11px 0;color:#d4dae4}
+  #lessonpane h3{font-size:14px;margin:20px 0 7px;color:var(--accent2)}
+  #lessonpane ul{margin:9px 0 9px 18px;font-size:13.5px;line-height:1.55}
+  #lessonpane li{margin:4px 0}
+  #lessonpane code{background:var(--panel2);padding:1.5px 5px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--accent2)}
+  #lessonpane pre{background:#101216;border:1px solid var(--line);border-radius:8px;padding:13px;overflow-x:auto;margin:13px 0;font-family:var(--mono);font-size:12px;line-height:1.5}
+  #lessonpane .analogy{background:#1f2a33;border-left:3px solid var(--accent);padding:11px 13px;border-radius:0 8px 8px 0;margin:15px 0;font-size:12.5px;color:#c8d4de}
+  #lessonpane .analogy b{color:var(--accent2)}
+  #lessonpane .warn{background:#2e261c;border-left:3px solid var(--yellow);padding:11px 13px;border-radius:0 8px 8px 0;margin:15px 0;font-size:12.5px;color:#e6d8b8}
+  #lessonpane .task{background:#1c2a22;border:1px solid #2c4636;border-radius:8px;padding:13px 15px;margin:16px 0}
+  #lessonpane .task h4{color:var(--green);font-size:12.5px;margin-bottom:5px}
+  #lessonpane .task p{margin:5px 0;font-size:12.5px}
+
+  /* QUIZ */
+  .quiz{background:#221c2e;border:1px solid #3a2c4a;border-radius:8px;padding:13px 15px;margin:16px 0}
+  .quiz h4{color:var(--purple);font-size:12.5px;margin-bottom:9px}
+  .quiz .q{font-size:13px;margin-bottom:9px;font-weight:500}
+  .quiz .opt{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 11px;border-radius:6px;margin:5px 0;font-size:12.5px;cursor:pointer;transition:.12s}
+  .quiz .opt:hover{border-color:var(--purple)}
+  .quiz .opt.correct{background:#1e3a28;border-color:var(--green);color:#aef0c6}
+  .quiz .opt.wrong{background:#3a1e22;border-color:var(--red);color:#f0aeb2}
+  .quiz .feedback{font-size:11.5px;margin-top:7px;min-height:14px}
+
+  /* CODE + VIEWER PANE */
+  #rightpane{width:66%;display:flex;flex-direction:column;min-width:0}
+  #viewerwrap{height:46%;position:relative;background:#0c0e12;border-bottom:1px solid var(--line);flex-shrink:0}
+  #viewer3d{width:100%;height:100%;display:block}
+  #viewerhud{position:absolute;top:8px;left:10px;font-size:10.5px;color:var(--muted);font-family:var(--mono);pointer-events:none;text-shadow:0 1px 2px #000}
+  #viewerhud b{color:var(--accent2)}
+  #viewerbadge{position:absolute;top:8px;right:10px;font-size:9.5px;color:var(--com);font-family:var(--mono);background:rgba(0,0,0,.4);padding:3px 7px;border-radius:5px}
+  #playbar{position:absolute;bottom:8px;left:10px;display:flex;gap:6px}
+  #playbar button{background:rgba(30,34,41,.85);border:1px solid var(--line);color:var(--txt);font-size:10.5px;padding:4px 9px;border-radius:5px;cursor:pointer}
+  #playbar button:hover{border-color:var(--accent)}
+
+  #codearea{flex:1;display:flex;flex-direction:column;min-height:0;background:#101216}
+  #editorhead{padding:7px 13px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;background:var(--panel)}
+  #editorhead .fname{color:var(--accent2);font-family:var(--mono)}
+  #editorwrap{flex:1;position:relative;overflow:hidden;min-height:90px}
+  #editor{position:absolute;inset:0;width:100%;height:100%;background:transparent;font-family:var(--mono);font-size:13px;line-height:1.5;padding:12px 12px 12px 48px;border:none;resize:none;outline:none;white-space:pre;overflow:auto;tab-size:4;z-index:2;color:transparent;caret-color:var(--accent2)}
+  #highlight{position:absolute;inset:0;width:100%;height:100%;font-family:var(--mono);font-size:13px;line-height:1.5;padding:12px 12px 12px 48px;white-space:pre;overflow:auto;pointer-events:none;z-index:1;color:var(--txt)}
+  #linenums{position:absolute;left:0;top:0;width:40px;height:100%;background:#0c0e12;font-family:var(--mono);font-size:13px;line-height:1.5;padding:12px 7px 12px 0;text-align:right;color:#454d5c;z-index:3;overflow:hidden;border-right:1px solid var(--line);user-select:none}
+  .tok-kw{color:var(--kw)} .tok-str{color:var(--str)} .tok-num{color:var(--num)}
+  .tok-com{color:var(--com);font-style:italic} .tok-fn{color:var(--fn)} .tok-type{color:var(--type)}
+
+  #editorbar{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center;background:var(--panel)}
+  #runbtn{background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer}
+  #runbtn:hover{background:var(--accent2)}
+  #resetbtn,#solbtn{background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:7px 11px;border-radius:6px;font-size:11.5px;cursor:pointer}
+  #resetbtn:hover,#solbtn:hover{color:var(--txt);border-color:var(--accent)}
+  #editorbar .spacer{flex:1}
+  #console{height:96px;background:#0a0c0f;border-top:1px solid var(--line);overflow-y:auto;padding:8px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.45;flex-shrink:0}
+  #console .out{color:#b8c0cc;white-space:pre-wrap} #console .ok{color:var(--green);font-weight:600}
+  #console .err{color:var(--red)} #console .hint{color:var(--yellow)} #console .sys{color:var(--com)}
+
+  #navbtns{display:flex;gap:9px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+  #navbtns button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px;border-radius:7px;font-size:12.5px;cursor:pointer}
+  #navbtns button:hover:not(:disabled){border-color:var(--accent)}
+  #navbtns button:disabled{opacity:.35;cursor:default}
+  #navbtns button.next{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#3a414e;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  #menubtn{display:none;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:5px 10px;border-radius:6px;cursor:pointer}
+  @media(max-width:980px){
+    #sidebar{position:absolute;z-index:50;height:100%;transform:translateX(-100%);transition:transform .25s}
+    #sidebar.open{transform:translateX(0)}
+    #workarea{flex-direction:column}
+    #lessonpane,#rightpane{width:100%}
+    #lessonpane{border-right:none;border-bottom:1px solid var(--line);max-height:40%}
+    #menubtn{display:block}
+    #viewerwrap{height:200px}
+  }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <header>
+    <h1><span class="dot"></span> Godot 3D · Maestría</h1>
+    <p>El mundo 3D de Godot 4 · de cero a experto</p>
+    <div id="progressbar"><div id="progressfill"></div></div>
+    <div id="progresstext">0 de 0 lecciones</div>
+  </header>
+  <nav id="lessonlist"></nav>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <button id="menubtn">☰</button>
+    <span class="title" id="topTitle">Cargando…</span>
+    <button id="resetProg">Reiniciar progreso</button>
+  </div>
+
+  <div id="workarea">
+    <section id="lessonpane"></section>
+    <section id="rightpane">
+      <div id="viewerwrap">
+        <canvas id="viewer3d"></canvas>
+        <div id="viewerhud"></div>
+        <div id="viewerbadge">VISOR 3D · arrastra para orbitar</div>
+        <div id="playbar">
+          <button id="playToggle">⏸ Pausar</button>
+          <button id="camReset">⟳ Cámara</button>
+        </div>
+      </div>
+      <div id="codearea">
+        <div id="editorhead"><span>📄</span><span class="fname" id="fname">script.gd</span><span style="margin-left:auto;color:var(--com)">GDScript → visor 3D en vivo</span></div>
+        <div id="editorwrap">
+          <div id="linenums">1</div>
+          <pre id="highlight"></pre>
+          <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </div>
+        <div id="editorbar">
+          <button id="runbtn">▶ Ejecutar (Ctrl+Enter)</button>
+          <button id="resetbtn">↺ Código</button>
+          <div class="spacer"></div>
+          <button id="solbtn">Ver solución</button>
+        </div>
+        <div id="console"><span class="sys">// La consola y el visor 3D mostrarán el resultado de tu código.</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================================
+   VISOR 3D (Three.js) — renderiza una "escena Godot" descrita por un objeto JS.
+   ============================================================================ */
+const V = {scene:null,camera:null,renderer:null,controls:null,objs:[],helpers:[],
+  paused:false,t:0,raf:null,update:null,defaultCam:{r:8,theta:0.7,phi:1.0,target:[0,0.5,0]}};
+
+function initViewer(){
+  const canvas=document.getElementById("viewer3d");
+  V.renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  V.scene=new THREE.Scene();
+  V.scene.background=new THREE.Color(0x0c0e12);
+  V.camera=new THREE.PerspectiveCamera(55,1,0.1,1000);
+  // luz base mínima (cada lección puede añadir las suyas)
+  resizeViewer();
+  window.addEventListener("resize",resizeViewer);
+  setupOrbit(canvas);
+  animate();
+}
+function resizeViewer(){
+  const c=document.getElementById("viewer3d");
+  const w=c.clientWidth||c.parentElement.clientWidth, h=c.clientHeight||c.parentElement.clientHeight;
+  V.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  V.renderer.setSize(w,h,false);
+  V.camera.aspect=w/h; V.camera.updateProjectionMatrix();
+}
+// órbita manual (sin OrbitControls que no está en r128 por defecto)
+let orbit={...V.defaultCam},drag=false,px=0,py=0;
+function setupOrbit(canvas){
+  canvas.addEventListener("mousedown",e=>{drag=true;px=e.clientX;py=e.clientY;});
+  window.addEventListener("mouseup",()=>drag=false);
+  window.addEventListener("mousemove",e=>{
+    if(!drag)return;
+    orbit.theta+=(e.clientX-px)*0.008; orbit.phi-=(e.clientY-py)*0.008;
+    orbit.phi=Math.max(0.15,Math.min(Math.PI-0.15,orbit.phi));
+    px=e.clientX;py=e.clientY;
+  });
+  canvas.addEventListener("wheel",e=>{e.preventDefault();orbit.r*=(1+Math.sign(e.deltaY)*0.08);orbit.r=Math.max(2,Math.min(40,orbit.r));},{passive:false});
+  // touch
+  canvas.addEventListener("touchstart",e=>{drag=true;px=e.touches[0].clientX;py=e.touches[0].clientY;},{passive:true});
+  canvas.addEventListener("touchend",()=>drag=false);
+  canvas.addEventListener("touchmove",e=>{if(!drag)return;orbit.theta+=(e.touches[0].clientX-px)*0.01;orbit.phi-=(e.touches[0].clientY-py)*0.01;orbit.phi=Math.max(0.15,Math.min(Math.PI-0.15,orbit.phi));px=e.touches[0].clientX;py=e.touches[0].clientY;},{passive:true});
+}
+function updateCamera(){
+  const t=orbit.target;
+  V.camera.position.set(
+    t[0]+orbit.r*Math.sin(orbit.phi)*Math.sin(orbit.theta),
+    t[1]+orbit.r*Math.cos(orbit.phi),
+    t[2]+orbit.r*Math.sin(orbit.phi)*Math.cos(orbit.theta)
+  );
+  V.camera.lookAt(t[0],t[1],t[2]);
+}
+function animate(){
+  V.raf=requestAnimationFrame(animate);
+  if(!V.paused){V.t+=1/60; if(V.update)try{V.update(V.t);}catch(e){}}
+  updateCamera();
+  V.renderer.render(V.scene,V.camera);
+}
+function clearScene(){
+  V.objs.forEach(o=>V.scene.remove(o));
+  V.helpers.forEach(o=>V.scene.remove(o));
+  // limpiar todo menos cámara
+  while(V.scene.children.length)V.scene.remove(V.scene.children[0]);
+  V.objs=[];V.helpers=[];V.update=null;
+}
+function addGrid(size=12){
+  const g=new THREE.GridHelper(size,size,0x2c333f,0x20262f);
+  g.position.y=0; V.scene.add(g); V.helpers.push(g);
+  const ax=new THREE.AxesHelper(2.2); V.scene.add(ax); V.helpers.push(ax);
+}
+function baseLights(){
+  V.scene.add(new THREE.AmbientLight(0xffffff,0.35));
+  const d=new THREE.DirectionalLight(0xffffff,0.7); d.position.set(5,8,6); V.scene.add(d);
+}
+// Construye un mesh a partir de una descripción simple
+function makeMesh(d){
+  let geo;
+  const s=d.size||[1,1,1];
+  if(d.shape==="sphere")geo=new THREE.SphereGeometry((d.r||0.6),32,24);
+  else if(d.shape==="cylinder")geo=new THREE.CylinderGeometry(d.r||0.5,d.r||0.5,d.h||1.4,28);
+  else if(d.shape==="cone")geo=new THREE.ConeGeometry(d.r||0.6,d.h||1.4,28);
+  else if(d.shape==="plane"){geo=new THREE.PlaneGeometry(s[0],s[2]);}
+  else if(d.shape==="torus")geo=new THREE.TorusGeometry(d.r||0.6,0.22,16,40);
+  else geo=new THREE.BoxGeometry(s[0],s[1],s[2]);
+  let mat;
+  const col=new THREE.Color(d.color!==undefined?d.color:0x5fb8ff);
+  if(d.material==="wire")mat=new THREE.MeshBasicMaterial({color:col,wireframe:true});
+  else if(d.material==="unlit")mat=new THREE.MeshBasicMaterial({color:col,transparent:d.opacity!==undefined,opacity:d.opacity??1});
+  else if(d.material==="emissive")mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:d.emis||0.8,metalness:0.1,roughness:0.4});
+  else mat=new THREE.MeshStandardMaterial({color:col,metalness:d.metal??0.1,roughness:d.rough??0.6,transparent:d.opacity!==undefined,opacity:d.opacity??1,flatShading:!!d.flat});
+  const m=new THREE.Mesh(geo,mat);
+  const p=d.pos||[0,0,0]; m.position.set(p[0],p[1],p[2]);
+  if(d.shape==="plane")m.rotation.x=-Math.PI/2;
+  if(d.rot)m.rotation.set(d.rot[0],d.rot[1],d.rot[2]);
+  if(d.scale)m.scale.set(d.scale[0],d.scale[1],d.scale[2]);
+  m.userData=d;
+  return m;
+}
+// Pinta una escena completa: {grid, lights:[], meshes:[], lines:[], update(t,objs)}
+function renderScene(spec){
+  clearScene();
+  if(spec.grid!==false)addGrid(spec.gridSize||12);
+  if(spec.lights){
+    spec.lights.forEach(L=>{
+      let light;
+      if(L.type==="ambient")light=new THREE.AmbientLight(L.color??0xffffff,L.intensity??0.4);
+      else if(L.type==="point"){light=new THREE.PointLight(L.color??0xffffff,L.intensity??1,L.range??50);light.position.set(...(L.pos||[2,3,2]));
+        const h=new THREE.Mesh(new THREE.SphereGeometry(0.12,12,8),new THREE.MeshBasicMaterial({color:L.color??0xffffff}));h.position.copy(light.position);V.scene.add(h);V.helpers.push(h);}
+      else if(L.type==="spot"){light=new THREE.SpotLight(L.color??0xffffff,L.intensity??1.2,L.range??30,L.angle??0.5,0.4);light.position.set(...(L.pos||[3,6,3]));}
+      else {light=new THREE.DirectionalLight(L.color??0xffffff,L.intensity??0.7);light.position.set(...(L.pos||[5,8,6]));}
+      V.scene.add(light);V.helpers.push(light);
+    });
+  } else baseLights();
+  const built=[];
+  (spec.meshes||[]).forEach(d=>{const m=makeMesh(d);V.scene.add(m);V.objs.push(m);built.push(m);});
+  (spec.lines||[]).forEach(L=>{
+    const pts=L.points.map(p=>new THREE.Vector3(...p));
+    const g=new THREE.BufferGeometry().setFromPoints(pts);
+    const ln=new THREE.Line(g,new THREE.LineBasicMaterial({color:L.color??0xe6c068}));
+    V.scene.add(ln);V.helpers.push(ln);
+  });
+  if(spec.cam)orbit={...orbit,...spec.cam};
+  if(spec.update)V.update=(t)=>spec.update(t,built);
+  document.getElementById("viewerhud").innerHTML=spec.hud||"";
+}
+
+/* ============================================================================
+   "Compilador" didáctico: extrae datos del código GDScript del alumno
+   buscando llamadas/valores clave y produce un spec de escena + valida.
+   Cada lección define cómo leer su propio código (parser local sencillo).
+   ============================================================================ */
+function num(re,code,def){const m=code.match(re);return m?parseFloat(m[1]):def;}
+function has(re,code){return re.test(code);}
+function logPrints(code){ // simula prints de strings/números simples
+  const outs=[];const re=/print\s*\(\s*("([^"]*)"|'([^']*)'|[^)]*)\)/g;let m;
+  while((m=re.exec(code))){outs.push(m[2]??m[3]??m[1]);}
+  return outs;
+}
+
+/* ============================================================================
+   RESALTADO DE SINTAXIS
+   ============================================================================ */
+const KEYWORDS=["func","var","const","if","elif","else","for","in","while","return","pass","extends","class_name","signal","enum","and","or","not","true","false","null","range","self","await","match","static","@onready","@export"];
+const TYPES=["int","float","bool","String","Vector3","Vector2","Transform3D","Basis","Quaternion","Color","Node3D","CharacterBody3D","RigidBody3D","StaticBody3D","Area3D","MeshInstance3D","Camera3D","DirectionalLight3D","OmniLight3D","SpotLight3D","RayCast3D","NavigationAgent3D","AnimationPlayer","AnimationTree","void","Array","Dictionary","PI","TAU","Mesh","StandardMaterial3D","ShaderMaterial"];
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function highlight(code){
+  return code.split("\n").map(line=>{
+    let r="",i=0;
+    while(i<line.length){
+      const rest=line.slice(i);
+      if(rest[0]==="#"){r+=`<span class="tok-com">${escapeHtml(rest)}</span>`;break;}
+      let m=rest.match(/^"([^"]*)"/)||rest.match(/^'([^']*)'/);
+      if(m){r+=`<span class="tok-str">${escapeHtml(m[0])}</span>`;i+=m[0].length;continue;}
+      m=rest.match(/^-?\d+\.?\d*/);
+      if(m&&/\d/.test(m[0])){r+=`<span class="tok-num">${m[0]}</span>`;i+=m[0].length;continue;}
+      m=rest.match(/^@?[A-Za-z_]\w*/);
+      if(m){const w=m[0];
+        if(KEYWORDS.includes(w))r+=`<span class="tok-kw">${w}</span>`;
+        else if(TYPES.includes(w))r+=`<span class="tok-type">${w}</span>`;
+        else if(line[i+w.length]==="(")r+=`<span class="tok-fn">${escapeHtml(w)}</span>`;
+        else r+=escapeHtml(w);
+        i+=w.length;continue;}
+      r+=escapeHtml(line[i]);i++;
+    }
+    return r;
+  }).join("\n");
+}
+
+/* ============================================================================
+   CONTENIDO — TODO 3D. 7 módulos.
+   ============================================================================ */
+const LESSONS=[
+/* ---------- M1: Transform3D, escena, cámara ---------- */
+{
+ module:"1 · Transform, escena y cámara", file:"transform.gd",
+ title:"Position: mover un Node3D en el espacio",
+ html:`
+ <p>En 3D, todo nodo visible deriva de <code>Node3D</code> y tiene una propiedad <code>position</code> de tipo <code>Vector3</code>. Mover algo es escribir en <code>position</code>.</p>
+ <div class="analogy"><b>Analogía:</b> los ejes en Godot: <b>X</b> derecha, <b>Y</b> arriba, <b>Z</b> hacia ti (¡el "adelante" es <code>-Z</code>!). Distinto de otros motores, así que vale memorizarlo.</div>
+ <pre>extends Node3D
+func _ready():
+    position = Vector3(2, 1, 0)</pre>
+ <p>El visor de la derecha muestra el cubo. Cámbialo de lugar y pulsa Ejecutar para verlo saltar a la nueva posición.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Coloca el cubo en <code>position = Vector3(3, 2, 0)</code>. El visor debe mostrarlo elevado y a la derecha.</p></div>`,
+ quiz:{q:"En Godot 4, ¿hacia dónde apunta el 'adelante' por convención?",opts:["+Z","-Z","+Y"],correct:1,fb:"Correcto: el forward es -Z. Por eso para avanzar restas en Z."},
+ starter:`extends Node3D\nfunc _ready():\n    position = Vector3(0, 0, 0)\n`,
+ solution:`extends Node3D\nfunc _ready():\n    position = Vector3(3, 2, 0)\n`,
+ scene(code){
+   const m=code.match(/position\s*=\s*Vector3\(([^)]*)\)/);
+   let p=[0,0,0]; if(m){const a=m[1].split(",").map(s=>parseFloat(s)||0);p=[a[0]||0,a[1]||0,a[2]||0];}
+   return {meshes:[{shape:"box",pos:p,color:0x5fb8ff},{shape:"box",pos:[0,0,0],material:"wire",color:0x333a45}],
+     hud:`position = <b>(${p[0]}, ${p[1]}, ${p[2]})</b><br>(cubo gris = origen)`};
+ },
+ validate(code){
+   const m=code.match(/position\s*=\s*Vector3\(([^)]*)\)/);
+   if(!m)return{ok:false,msg:"No encuentro la asignación a position.",hint:"Escribe: position = Vector3(3, 2, 0)"};
+   const a=m[1].split(",").map(s=>parseFloat(s));
+   if(a[0]===3&&a[1]===2&&a[2]===0)return{ok:true,msg:"¡El cubo está en (3,2,0)! Mira el visor."};
+   return{ok:false,msg:`Está en (${a[0]},${a[1]},${a[2]}), se pedía (3,2,0).`,hint:"Vector3(3, 2, 0)"};
+ }
+},
+{
+ module:"1 · Transform, escena y cámara", file:"rotacion.gd",
+ title:"Rotation: girar con radianes",
+ html:`
+ <p><code>rotation</code> es un <code>Vector3</code> en <b>radianes</b> (no grados). Para pensar en grados usa <code>deg_to_rad(45)</code>.</p>
+ <div class="analogy"><b>Analogía:</b> 1 vuelta completa = <code>TAU</code> (≈6.28) = 360°. Media vuelta = <code>PI</code>. Un cuarto = <code>PI/2</code> = 90°.</div>
+ <pre>rotation.y = deg_to_rad(45)   # gira 45° sobre el eje Y</pre>
+ <div class="task"><h4>🎯 Práctica</h4><p>Gira el cubo <code>45</code> grados sobre Y: <code>rotation.y = deg_to_rad(45)</code>. Verás la cara diagonal en el visor.</p></div>`,
+ quiz:{q:"¿Cuánto vale una vuelta completa en radianes?",opts:["PI","TAU (≈6.28)","90"],correct:1,fb:"TAU = 2·PI ≈ 6.28 = 360°."},
+ starter:`extends Node3D\nfunc _ready():\n    rotation.y = deg_to_rad(0)\n`,
+ solution:`extends Node3D\nfunc _ready():\n    rotation.y = deg_to_rad(45)\n`,
+ scene(code){
+   const m=code.match(/rotation\.y\s*=\s*deg_to_rad\(([^)]*)\)/);
+   const deg=m?parseFloat(m[1])||0:0;
+   return {meshes:[{shape:"box",pos:[0,0.6,0],color:0x5cc88a,rot:[0,deg*Math.PI/180,0]}],
+     hud:`rotation.y = <b>${deg}°</b> (${(deg*Math.PI/180).toFixed(2)} rad)`};
+ },
+ validate(code){
+   const m=code.match(/rotation\.y\s*=\s*deg_to_rad\(([^)]*)\)/);
+   if(m&&Math.abs(parseFloat(m[1])-45)<0.001)return{ok:true,msg:"¡45° sobre Y! El cubo quedó en diagonal."};
+   return{ok:false,msg:"Aún no son 45° en Y.",hint:"rotation.y = deg_to_rad(45)"};
+ }
+},
+{
+ module:"1 · Transform, escena y cámara", file:"escala.gd",
+ title:"Scale y el Transform3D completo",
+ html:`
+ <p>Cada Node3D tiene un <code>Transform3D</code> = posición + rotación + escala juntas. <code>scale</code> es un <code>Vector3</code> de multiplicadores.</p>
+ <pre>scale = Vector3(2, 1, 1)   # doble de ancho</pre>
+ <div class="warn"><b>Dato pro:</b> escalar de forma no uniforme (distinto en cada eje) puede deformar normales y romper físicas. En producción se prefiere escalar la malla, no el nodo físico.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Haz el cubo el doble de alto: <code>scale = Vector3(1, 2, 1)</code>.</p></div>`,
+ quiz:{q:"¿Qué agrupa un Transform3D?",opts:["Solo posición","Posición, rotación y escala","Material y malla"],correct:1,fb:"Transform3D = posición + rotación (Basis) + escala."},
+ starter:`extends Node3D\nfunc _ready():\n    scale = Vector3(1, 1, 1)\n`,
+ solution:`extends Node3D\nfunc _ready():\n    scale = Vector3(1, 2, 1)\n`,
+ scene(code){
+   const m=code.match(/scale\s*=\s*Vector3\(([^)]*)\)/);
+   let s=[1,1,1];if(m){const a=m[1].split(",").map(x=>parseFloat(x)||1);s=[a[0]||1,a[1]||1,a[2]||1];}
+   return {meshes:[{shape:"box",pos:[0,s[1]/2,0],color:0xe6c068,scale:s}],hud:`scale = <b>(${s[0]}, ${s[1]}, ${s[2]})</b>`};
+ },
+ validate(code){
+   const m=code.match(/scale\s*=\s*Vector3\(([^)]*)\)/);
+   if(m){const a=m[1].split(",").map(x=>parseFloat(x));if(a[0]===1&&a[1]===2&&a[2]===1)return{ok:true,msg:"¡El cubo duplicó su altura!"};}
+   return{ok:false,msg:"Escala aún no es (1,2,1).",hint:"scale = Vector3(1, 2, 1)"};
+ }
+},
+/* ---------- M2: Mallas, materiales, luces, sombras ---------- */
+{
+ module:"2 · Mallas, materiales y luz", file:"mesh.gd",
+ title:"MeshInstance3D: la forma visible",
+ html:`
+ <p>Un <code>MeshInstance3D</code> muestra una malla: cubo, esfera, cilindro, cono… En código asignas la malla a la propiedad <code>mesh</code>.</p>
+ <pre>var mi = MeshInstance3D.new()
+mi.mesh = SphereMesh.new()</pre>
+ <p>Aquí elige la forma escribiendo su nombre en la variable <code>forma</code>: <code>"box"</code>, <code>"sphere"</code>, <code>"cylinder"</code>, <code>"cone"</code> o <code>"torus"</code>.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Cambia <code>var forma = "box"</code> por <code>"sphere"</code> y observa el visor.</p></div>`,
+ quiz:{q:"¿Qué nodo muestra una malla 3D?",opts:["Camera3D","MeshInstance3D","Area3D"],correct:1,fb:"MeshInstance3D es el nodo que renderiza geometría."},
+ starter:`extends Node3D\nfunc _ready():\n    var forma = "box"\n`,
+ solution:`extends Node3D\nfunc _ready():\n    var forma = "sphere"\n`,
+ scene(code){
+   const m=code.match(/forma\s*=\s*"(\w+)"/); const f=m?m[1]:"box";
+   const valid=["box","sphere","cylinder","cone","torus"].includes(f)?f:"box";
+   return {meshes:[{shape:valid,pos:[0,0.7,0],color:0x5fb8ff,r:0.7,h:1.4}],hud:`mesh = <b>${valid}</b>`};
+ },
+ validate(code){
+   const m=code.match(/forma\s*=\s*"(\w+)"/);
+   if(m&&m[1]==="sphere")return{ok:true,msg:"¡Es una esfera! Cambia entre formas para explorar."};
+   return{ok:false,msg:"Aún no es 'sphere'.",hint:'var forma = "sphere"'};
+ }
+},
+{
+ module:"2 · Mallas, materiales y luz", file:"material.gd",
+ title:"StandardMaterial3D: color, metal y rugosidad",
+ html:`
+ <p>Un material define cómo se ve la superficie. <code>albedo_color</code> es el color base; <code>metallic</code> y <code>roughness</code> controlan el reflejo (modelo PBR).</p>
+ <pre>var mat = StandardMaterial3D.new()
+mat.albedo_color = Color(1, 0.4, 0.2)  # naranja
+mat.metallic = 0.8
+mat.roughness = 0.2</pre>
+ <div class="analogy"><b>Analogía PBR:</b> <code>roughness</code> 0 = espejo pulido; 1 = mate como tiza. <code>metallic</code> 1 = metal; 0 = plástico/madera.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Pon <code>metallic = 0.9</code> y <code>roughness = 0.15</code> para un look metálico brillante. (Color libre con <code>Color(r,g,b)</code>.)</p></div>`,
+ quiz:{q:"roughness = 0 produce…",opts:["Superficie mate","Reflejo tipo espejo","Transparencia"],correct:1,fb:"roughness bajo = liso y reflectante."},
+ starter:`extends Node3D\nfunc _ready():\n    var mat = StandardMaterial3D.new()\n    mat.albedo_color = Color(0.4, 0.7, 1)\n    mat.metallic = 0.1\n    mat.roughness = 0.7\n`,
+ solution:`extends Node3D\nfunc _ready():\n    var mat = StandardMaterial3D.new()\n    mat.albedo_color = Color(0.8, 0.8, 0.9)\n    mat.metallic = 0.9\n    mat.roughness = 0.15\n`,
+ scene(code){
+   const cm=code.match(/albedo_color\s*=\s*Color\(([^)]*)\)/);
+   let col=0x6aa9d9; if(cm){const a=cm[1].split(",").map(x=>parseFloat(x)||0);col=new THREE.Color(a[0]||0,a[1]||0,a[2]||0).getHex();}
+   const metal=num(/metallic\s*=\s*([\d.]+)/,code,0.1);
+   const rough=num(/roughness\s*=\s*([\d.]+)/,code,0.7);
+   return {lights:[{type:"ambient",intensity:0.3},{type:"point",pos:[3,4,3],intensity:1.1,color:0xffffff},{type:"point",pos:[-3,2,-2],intensity:0.5,color:0x88aaff}],
+     meshes:[{shape:"sphere",pos:[0,0.9,0],color:col,metal,rough,r:0.9},{shape:"plane",size:[10,1,10],pos:[0,0,0],color:0x1a1d24,rough:1}],
+     hud:`metallic=<b>${metal}</b> roughness=<b>${rough}</b>`};
+ },
+ validate(code){
+   const metal=num(/metallic\s*=\s*([\d.]+)/,code,0.1);
+   const rough=num(/roughness\s*=\s*([\d.]+)/,code,0.7);
+   if(metal>=0.85&&rough<=0.25)return{ok:true,msg:"¡Material metálico pulido logrado! Mira el brillo en el visor."};
+   return{ok:false,msg:`metallic=${metal}, roughness=${rough}. Faltan los valores metálicos.`,hint:"metallic = 0.9 y roughness = 0.15"};
+ }
+},
+{
+ module:"2 · Mallas, materiales y luz", file:"luces.gd",
+ title:"Luces y sombras 3D",
+ html:`
+ <p>Sin luz, una escena PBR se ve negra. Tipos: <code>DirectionalLight3D</code> (sol), <code>OmniLight3D</code> (foco esférico), <code>SpotLight3D</code> (linterna).</p>
+ <pre>var luz = OmniLight3D.new()
+luz.light_energy = 2.0
+luz.position = Vector3(2, 3, 2)</pre>
+ <div class="task"><h4>🎯 Práctica</h4><p>Sube la intensidad de la luz: <code>light_energy = 2.0</code>. La escena se iluminará más en el visor.</p></div>`,
+ quiz:{q:"¿Qué luz simula el Sol (rayos paralelos)?",opts:["OmniLight3D","SpotLight3D","DirectionalLight3D"],correct:2,fb:"DirectionalLight3D = rayos paralelos infinitos, como el sol."},
+ starter:`extends Node3D\nfunc _ready():\n    var luz = OmniLight3D.new()\n    luz.light_energy = 0.4\n    luz.position = Vector3(2, 3, 2)\n`,
+ solution:`extends Node3D\nfunc _ready():\n    var luz = OmniLight3D.new()\n    luz.light_energy = 2.0\n    luz.position = Vector3(2, 3, 2)\n`,
+ scene(code){
+   const e=num(/light_energy\s*=\s*([\d.]+)/,code,0.4);
+   const pm=code.match(/position\s*=\s*Vector3\(([^)]*)\)/);
+   let p=[2,3,2];if(pm){const a=pm[1].split(",").map(x=>parseFloat(x)||0);p=[a[0],a[1],a[2]];}
+   return {lights:[{type:"ambient",intensity:0.12},{type:"point",pos:p,intensity:e,color:0xfff0d8,range:60}],
+     meshes:[{shape:"sphere",pos:[-1.2,0.7,0],color:0xdddddd,r:0.7,rough:0.5},{shape:"box",pos:[1.2,0.6,0],color:0xdddddd,rough:0.7},{shape:"plane",size:[12,1,12],color:0x14171d,rough:1}],
+     hud:`light_energy = <b>${e}</b> @ (${p.join(", ")})`};
+ },
+ validate(code){
+   const e=num(/light_energy\s*=\s*([\d.]+)/,code,0.4);
+   if(e>=1.8)return{ok:true,msg:"¡Escena bien iluminada! Las superficies revelan su forma."};
+   return{ok:false,msg:`light_energy=${e}, aún bajo.`,hint:"light_energy = 2.0"};
+ }
+},
+/* ---------- M3: Física 3D, colisiones, raycasts ---------- */
+{
+ module:"3 · Física, colisiones y raycasts", file:"caida.gd",
+ title:"RigidBody3D: gravedad y caída",
+ html:`
+ <p>Un <code>RigidBody3D</code> es simulado por el motor de física: cae, rebota y choca solo. Tú solo defines masa y materiales.</p>
+ <p>Aquí controlas la <code>masa</code> y la <code>altura</code> inicial. Pulsa Ejecutar y mira caer el cuerpo en el visor (animado).</p>
+ <pre>var cuerpo = RigidBody3D.new()
+cuerpo.mass = 1.0
+cuerpo.position.y = 5.0</pre>
+ <div class="warn"><b>Clave:</b> nunca muevas un RigidBody escribiendo <code>position</code> cada frame; eso pelea con la física. Usa fuerzas/impulsos o un CharacterBody.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Suelta el cuerpo desde <code>altura = 6.0</code>. Verás la caída con rebote.</p></div>`,
+ quiz:{q:"¿Cómo NO debes mover un RigidBody3D?",opts:["Con apply_impulse","Escribiendo position cada frame","Con fuerzas"],correct:1,fb:"Escribir position cada frame rompe la simulación."},
+ starter:`extends Node3D\nfunc _ready():\n    var altura = 2.0\n`,
+ solution:`extends Node3D\nfunc _ready():\n    var altura = 6.0\n`,
+ scene(code){
+   const h=num(/altura\s*=\s*([\d.]+)/,code,2);
+   let vy=0,y=h;
+   return {meshes:[{shape:"sphere",pos:[0,h,0],color:0xe2706f,r:0.6,rough:0.4},{shape:"plane",size:[10,1,10],color:0x1a1d24,rough:1}],
+     hud:`Cayendo desde y=<b>${h}</b> · gravedad 9.8`,
+     update(t,objs){const ball=objs[0];if(!ball)return; vy-=9.8*(1/60); y+=vy*(1/60); if(y<0.6){y=0.6;vy=-vy*0.6;} ball.position.y=y;}};
+ },
+ validate(code){
+   const h=num(/altura\s*=\s*([\d.]+)/,code,2);
+   if(h>=6)return{ok:true,msg:"¡Suelta desde 6! Observa el rebote amortiguado (factor 0.6)."};
+   return{ok:false,msg:`altura=${h}.`,hint:"altura = 6.0"};
+ }
+},
+{
+ module:"3 · Física, colisiones y raycasts", file:"character.gd",
+ title:"CharacterBody3D: movimiento controlado",
+ html:`
+ <p>Para un jugador usas <code>CharacterBody3D</code>: tú mandas la <code>velocity</code> y <code>move_and_slide()</code> resuelve colisiones.</p>
+ <pre>func _physics_process(delta):
+    velocity.x = direccion * velocidad
+    move_and_slide()</pre>
+ <p>Define <code>velocidad</code>; el cubo patrullará de lado a lado en el visor a esa rapidez.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Sube <code>velocidad = 4.0</code> para que patrulle más rápido.</p></div>`,
+ quiz:{q:"¿Qué función resuelve colisiones del CharacterBody3D?",opts:["move_and_slide()","apply_force()","queue_free()"],correct:0,fb:"move_and_slide() mueve y desliza contra obstáculos."},
+ starter:`extends CharacterBody3D\nvar velocidad = 1.0\nfunc _physics_process(delta):\n    move_and_slide()\n`,
+ solution:`extends CharacterBody3D\nvar velocidad = 4.0\nfunc _physics_process(delta):\n    move_and_slide()\n`,
+ scene(code){
+   const v=num(/velocidad\s*=\s*([\d.]+)/,code,1);
+   return {meshes:[{shape:"box",pos:[0,0.6,0],color:0x5cc88a},{shape:"box",pos:[-3,0.6,0],material:"wire",color:0x444c5a},{shape:"box",pos:[3,0.6,0],material:"wire",color:0x444c5a},{shape:"plane",size:[10,1,4],color:0x161a20,rough:1}],
+     hud:`velocidad = <b>${v}</b> u/s`,
+     update(t,objs){const c=objs[0];if(c)c.position.x=Math.sin(t*v*0.5)*3;}};
+ },
+ validate(code){
+   const v=num(/velocidad\s*=\s*([\d.]+)/,code,1);
+   if(v>=4)return{ok:true,msg:"¡Patrulla veloz! Esto escala a controles de teclado con Input."};
+   return{ok:false,msg:`velocidad=${v}.`,hint:"velocidad = 4.0"};
+ }
+},
+{
+ module:"3 · Física, colisiones y raycasts", file:"raycast.gd",
+ title:"RayCast3D: 'ver' y detectar",
+ html:`
+ <p>Un <code>RayCast3D</code> lanza una línea invisible y reporta qué golpea. Base de disparos hitscan, IA que ve al jugador, detección de suelo, etc.</p>
+ <pre>@onready var rayo = $RayCast3D
+func _physics_process(_d):
+    if rayo.is_colliding():
+        var obj = rayo.get_collider()</pre>
+ <p>Controla la <code>longitud</code> del rayo (en -Z). Cuando alcance la pared (a 3 u), se pondrá verde y reportará impacto.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Extiende el rayo a <code>longitud = 4.0</code> para que toque la pared.</p></div>`,
+ quiz:{q:"¿Qué devuelve get_collider()?",opts:["La distancia","El objeto golpeado","El color"],correct:1,fb:"Devuelve el nodo/objeto que el rayo intersecta."},
+ starter:`extends Node3D\nvar longitud = 1.5\nfunc _physics_process(_d):\n    pass\n`,
+ solution:`extends Node3D\nvar longitud = 4.0\nfunc _physics_process(_d):\n    pass\n`,
+ scene(code){
+   const L=num(/longitud\s*=\s*([\d.]+)/,code,1.5);
+   const wall=3.0; const hit=L>=wall;
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,6,4]}],
+     meshes:[{shape:"sphere",pos:[0,0.6,3],color:0x5fb8ff,r:0.35},{shape:"box",pos:[0,0.6,3-wall],size:[2,1.4,0.3],color:hit?0x5cc88a:0xe2706f}],
+     lines:[{points:[[0,0.6,3],[0,0.6,3-L]],color:hit?0x5cc88a:0xe6c068}],
+     hud:`longitud=<b>${L}</b> · pared a 3.0 · ${hit?'<b style="color:#5cc88a">IMPACTO</b>':'<span style="color:#e2706f">sin tocar</span>'}`};
+ },
+ validate(code){
+   const L=num(/longitud\s*=\s*([\d.]+)/,code,1.5);
+   if(L>=3)return{ok:true,msg:"¡El rayo toca la pared (verde)! is_colliding() sería true."};
+   return{ok:false,msg:`longitud=${L}, no llega a 3.`,hint:"longitud = 4.0"};
+ }
+},
+/* ---------- M4: Navegación / IA ---------- */
+{
+ module:"4 · Navegación e IA", file:"navmesh.gd",
+ title:"NavigationAgent3D: pathfinding",
+ html:`
+ <p>Un <code>NavigationAgent3D</code> calcula rutas sobre un <b>NavMesh</b> (malla de navegación). Le das un destino y él devuelve el siguiente punto del camino, esquivando obstáculos.</p>
+ <pre>agente.target_position = jugador.global_position
+var siguiente = agente.get_next_path_position()</pre>
+ <div class="analogy"><b>Analogía:</b> el NavMesh es como pintar en el suelo las zonas "caminables". El agente es un GPS que traza la ruta más corta dentro de esa pintura.</div>
+ <p>Mueve el <code>destino_x</code>: el agente (verde) recalcula y viaja hacia esa X rodeando el obstáculo.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Pon <code>destino_x = 3.0</code> para enviar al agente al otro extremo.</p></div>`,
+ quiz:{q:"¿Sobre qué calcula la ruta el agente?",opts:["Sobre cualquier malla","Sobre el NavMesh (zonas caminables)","Sobre la cámara"],correct:1,fb:"El NavMesh define el área navegable."},
+ starter:`extends Node3D\nvar destino_x = -3.0\nfunc _ready():\n    pass\n`,
+ solution:`extends Node3D\nvar destino_x = 3.0\nfunc _ready():\n    pass\n`,
+ scene(code){
+   const dx=num(/destino_x\s*=\s*(-?[\d.]+)/,code,-3);
+   return {lights:[{type:"ambient",intensity:0.45},{type:"directional",pos:[4,7,4]}],
+     meshes:[{shape:"cylinder",pos:[-3,0.5,0],color:0x5cc88a,r:0.4,h:1},{shape:"box",pos:[0,0.6,0],size:[0.8,1.2,2.4],color:0x555c6a},{shape:"sphere",pos:[dx,0.5,0],color:0xe6c068,r:0.35,material:"emissive",emis:0.6},{shape:"plane",size:[10,1,6],color:0x141820,rough:1}],
+     lines:[{points:[[-3,0.5,0],[-3,0.5,1.6],[dx,0.5,1.6],[dx,0.5,0]],color:0x5fb8ff}],
+     hud:`destino_x=<b>${dx}</b> · ruta rodea el obstáculo`,
+     update(t,objs){const ag=objs[0];if(!ag)return;const k=(Math.sin(t)*0.5+0.5);ag.position.x=-3+(dx-(-3))*k;ag.position.z=Math.sin(k*Math.PI)*1.6;}};
+ },
+ validate(code){
+   const dx=num(/destino_x\s*=\s*(-?[\d.]+)/,code,-3);
+   if(dx>=3)return{ok:true,msg:"¡El agente cruza al destino esquivando el muro!"};
+   return{ok:false,msg:`destino_x=${dx}.`,hint:"destino_x = 3.0"};
+ }
+},
+/* ---------- M5: Shaders ---------- */
+{
+ module:"5 · Shaders y efectos", file:"shader.gd",
+ title:"ShaderMaterial: color en la GPU",
+ html:`
+ <p>Un shader corre en la GPU para cada píxel en paralelo. En Godot el <code>shader_type spatial;</code> con <code>void fragment()</code> define el color final (<code>ALBEDO</code>).</p>
+ <pre>shader_type spatial;
+void fragment() {
+    ALBEDO = vec3(1.0, 0.0, 0.0); // rojo
+}</pre>
+ <div class="analogy"><b>Analogía:</b> escribes el código "desde el punto de vista de UN píxel"; la GPU lo clona para millones a la vez.</div>
+ <p>Edita el <code>vec3(r, g, b)</code> (valores 0–1). El visor pinta la esfera con ese color.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Haz la esfera <b>morada</b>: <code>vec3(0.6, 0.2, 1.0)</code>.</p></div>`,
+ quiz:{q:"¿Dónde se ejecuta un fragment shader?",opts:["En la CPU, secuencial","En la GPU, en paralelo por píxel","En el disco"],correct:1,fb:"En la GPU, masivamente en paralelo."},
+ starter:`shader_type spatial;\nvoid fragment() {\n    ALBEDO = vec3(0.2, 0.6, 1.0);\n}\n`,
+ solution:`shader_type spatial;\nvoid fragment() {\n    ALBEDO = vec3(0.6, 0.2, 1.0);\n}\n`,
+ scene(code){
+   const m=code.match(/vec3\(([^)]*)\)/);
+   let col=0x3399ff;if(m){const a=m[1].split(",").map(x=>parseFloat(x)||0);col=new THREE.Color(Math.min(1,a[0]||0),Math.min(1,a[1]||0),Math.min(1,a[2]||0)).getHex();}
+   return {lights:[{type:"ambient",intensity:1.0}],
+     meshes:[{shape:"sphere",pos:[0,0.9,0],color:col,material:"unlit",r:0.9}],
+     hud:`ALBEDO = <b>#${col.toString(16).padStart(6,"0")}</b>`};
+ },
+ validate(code){
+   const m=code.match(/vec3\(([^)]*)\)/);
+   if(m){const a=m[1].split(",").map(x=>parseFloat(x));if(Math.abs(a[0]-0.6)<0.1&&Math.abs(a[1]-0.2)<0.1&&Math.abs(a[2]-1.0)<0.1)return{ok:true,msg:"¡Esfera morada vía shader!"};}
+   return{ok:false,msg:"Aún no es morado.",hint:"ALBEDO = vec3(0.6, 0.2, 1.0)"};
+ }
+},
+{
+ module:"5 · Shaders y efectos", file:"shader_anim.gd",
+ title:"Shader animado con TIME",
+ html:`
+ <p>La variable integrada <code>TIME</code> (segundos) permite efectos animados sin tocar la CPU: pulsos, olas, parpadeos. Aquí lo simulamos como una emisión pulsante.</p>
+ <pre>void fragment() {
+    float pulso = abs(sin(TIME * velocidad));
+    EMISSION = vec3(0.2, 0.8, 1.0) * pulso;
+}</pre>
+ <div class="task"><h4>🎯 Práctica</h4><p>Acelera el pulso: pon <code>velocidad = 3.0</code> y verás la esfera latir más rápido en el visor.</p></div>`,
+ quiz:{q:"¿Qué da TIME en un shader?",opts:["El framerate","Segundos transcurridos para animar","La resolución"],correct:1,fb:"TIME = tiempo en segundos; ideal para animaciones."},
+ starter:`shader_type spatial;\nvoid fragment() {\n    float velocidad = 0.5;\n}\n`,
+ solution:`shader_type spatial;\nvoid fragment() {\n    float velocidad = 3.0;\n}\n`,
+ scene(code){
+   const v=num(/velocidad\s*=\s*([\d.]+)/,code,0.5);
+   return {lights:[{type:"ambient",intensity:0.3}],
+     meshes:[{shape:"sphere",pos:[0,0.9,0],color:0x33ccff,material:"emissive",emis:1,r:0.9}],
+     hud:`pulso con velocidad = <b>${v}</b>`,
+     update(t,objs){const s=objs[0];if(!s)return;const p=Math.abs(Math.sin(t*v));s.material.emissiveIntensity=0.1+p*1.6;s.scale.setScalar(0.9+p*0.15);}};
+ },
+ validate(code){
+   const v=num(/velocidad\s*=\s*([\d.]+)/,code,0.5);
+   if(v>=3)return{ok:true,msg:"¡La esfera late rápido con TIME! Cero coste de CPU."};
+   return{ok:false,msg:`velocidad=${v}.`,hint:"velocidad = 3.0"};
+ }
+},
+/* ---------- M6: Modelos y animación ---------- */
+{
+ module:"6 · Modelos y animación", file:"anim.gd",
+ title:"AnimationPlayer: reproducir clips",
+ html:`
+ <p>Tras importar un modelo (glTF), sus animaciones viven en un <code>AnimationPlayer</code>. Las reproduces por nombre.</p>
+ <pre>$AnimationPlayer.play("run")
+$AnimationPlayer.speed_scale = 1.5</pre>
+ <p>Controla <code>velocidad_anim</code>: el modelo (cápsula girando + bobbing) acelera su animación en el visor.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Acelera con <code>velocidad_anim = 2.0</code>.</p></div>`,
+ quiz:{q:"¿Qué propiedad acelera/frena una animación?",opts:["speed_scale","mass","albedo_color"],correct:0,fb:"speed_scale multiplica la velocidad de reproducción."},
+ starter:`extends Node3D\nvar velocidad_anim = 0.5\nfunc _ready():\n    pass\n`,
+ solution:`extends Node3D\nvar velocidad_anim = 2.0\nfunc _ready():\n    pass\n`,
+ scene(code){
+   const v=num(/velocidad_anim\s*=\s*([\d.]+)/,code,0.5);
+   return {lights:[{type:"ambient",intensity:0.4},{type:"directional",pos:[4,7,4]}],
+     meshes:[{shape:"cylinder",pos:[0,1,0],color:0xcf9aff,r:0.4,h:1.2},{shape:"sphere",pos:[0,1.8,0],color:0xe8d4ff,r:0.35},{shape:"plane",size:[8,1,8],color:0x141820,rough:1}],
+     hud:`speed_scale = <b>${v}</b>`,
+     update(t,objs){const body=objs[0],head=objs[1];const ph=t*v*3;if(body){body.rotation.y=ph;body.position.y=1+Math.sin(ph*2)*0.08;}if(head){head.rotation.y=ph;head.position.y=1.8+Math.sin(ph*2)*0.08;}}};
+ },
+ validate(code){
+   const v=num(/velocidad_anim\s*=\s*([\d.]+)/,code,0.5);
+   if(v>=2)return{ok:true,msg:"¡Animación acelerada! Así controlas correr vs caminar."};
+   return{ok:false,msg:`velocidad_anim=${v}.`,hint:"velocidad_anim = 2.0"};
+ }
+},
+{
+ module:"6 · Modelos y animación", file:"anim_tree.gd",
+ title:"AnimationTree: blend entre animaciones",
+ html:`
+ <p>El <code>AnimationTree</code> mezcla animaciones suavemente (idle↔walk↔run) según un parámetro <code>blend</code> de 0 a 1, evitando saltos bruscos.</p>
+ <pre>tree.set("parameters/blend_position", velocidad_actual)</pre>
+ <div class="analogy"><b>Analogía:</b> es un mezclador de DJ: en 0 suena "idle", en 1 suena "run"; en 0.5 una transición fluida entre ambas.</div>
+ <p>Ajusta <code>blend</code> (0–1): a 0 el personaje está quieto; a 1 corre. El visor interpola la intensidad del movimiento.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Pon <code>blend = 1.0</code> para el estado "correr" pleno.</p></div>`,
+ quiz:{q:"¿Para qué sirve el blend del AnimationTree?",opts:["Cambiar de color","Mezclar animaciones suavemente","Cargar texturas"],correct:1,fb:"Mezcla/transiciona animaciones de forma continua."},
+ starter:`extends Node3D\nvar blend = 0.0\nfunc _ready():\n    pass\n`,
+ solution:`extends Node3D\nvar blend = 1.0\nfunc _ready():\n    pass\n`,
+ scene(code){
+   const b=Math.max(0,Math.min(1,num(/blend\s*=\s*([\d.]+)/,code,0)));
+   return {lights:[{type:"ambient",intensity:0.4},{type:"directional",pos:[4,7,4]}],
+     meshes:[{shape:"cylinder",pos:[0,1,0],color:0x5cc88a,r:0.4,h:1.2},{shape:"sphere",pos:[0,1.8,0],color:0xc6f0d6,r:0.35}],
+     hud:`blend = <b>${b.toFixed(2)}</b> · ${b<0.3?"idle":b<0.7?"walk":"run"}`,
+     update(t,objs){const body=objs[0],head=objs[1];const amp=0.05+b*0.45;const spd=2+b*6;const ph=t*spd;if(body)body.position.y=1+Math.abs(Math.sin(ph))*amp;if(head)head.position.y=1.8+Math.abs(Math.sin(ph))*amp;}};
+ },
+ validate(code){
+   const b=num(/blend\s*=\s*([\d.]+)/,code,0);
+   if(b>=1)return{ok:true,msg:"¡Estado 'run' pleno! El blend te da transiciones de calidad AAA."};
+   return{ok:false,msg:`blend=${b}.`,hint:"blend = 1.0"};
+ }
+},
+/* ---------- M7: Experto ---------- */
+{
+ module:"7 · Experto", file:"lerp_cam.gd",
+ title:"Cámara suave con lerp",
+ html:`
+ <p>Una cámara que persigue al jugador con <code>lerp</code> evita el movimiento brusco. Cada frame se acerca un porcentaje al objetivo.</p>
+ <pre>camara.position = camara.position.lerp(objetivo, suavizado)</pre>
+ <p><code>suavizado</code> ∈ (0,1): cerca de 0 = cámara perezosa/cinematográfica; cerca de 1 = pegada al objetivo. Ajústalo y mira la cámara seguir al cubo.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Usa un seguimiento intermedio: <code>suavizado = 0.1</code> (movimiento suave pero responsivo).</p></div>`,
+ quiz:{q:"Un suavizado cercano a 0 produce…",opts:["Cámara rígida y pegada","Cámara perezosa y suave","Sin movimiento"],correct:1,fb:"Bajo = se acerca poco por frame = suave/lento."},
+ starter:`extends Camera3D\nvar suavizado = 1.0\nfunc _process(delta):\n    pass\n`,
+ solution:`extends Camera3D\nvar suavizado = 0.1\nfunc _process(delta):\n    pass\n`,
+ scene(code){
+   const s=Math.max(0.01,Math.min(1,num(/suavizado\s*=\s*([\d.]+)/,code,1)));
+   let camX=0;
+   return {meshes:[{shape:"box",pos:[0,0.6,0],color:0x5cc88a},{shape:"cone",pos:[0,0.4,4],color:0xe6c068,r:0.4,h:0.8,rot:[Math.PI/2,0,0]},{shape:"plane",size:[14,1,8],color:0x141820,rough:1}],
+     lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[3,6,4]}],
+     hud:`suavizado = <b>${s}</b> · cono = "cámara" siguiendo al cubo`,
+     update(t,objs){const cube=objs[0],cam=objs[1];if(!cube||!cam)return;const tx=Math.sin(t*0.8)*4;cube.position.x=tx;camX+=(tx-camX)*s;cam.position.x=camX;}};
+ },
+ validate(code){
+   const s=num(/suavizado\s*=\s*([\d.]+)/,code,1);
+   if(s>0&&s<=0.2)return{ok:true,msg:"¡Seguimiento suave! El cono (cámara) sigue al cubo con retraso elegante."};
+   return{ok:false,msg:`suavizado=${s}, busca algo ≤0.2.`,hint:"suavizado = 0.1"};
+ }
+},
+{
+ module:"7 · Experto", file:"spawn.gd",
+ title:"Instanciar muchos objetos (pooling)",
+ html:`
+ <p>Generar objetos en runtime se hace instanciando escenas. Para 3D con muchos elementos, se usa un bucle y, en producción, un <b>pool</b> para no crear/destruir constantemente.</p>
+ <pre>for i in range(cantidad):
+    var enemigo = escena.instantiate()
+    enemigo.position.x = i * 1.5
+    add_child(enemigo)</pre>
+ <div class="warn"><b>Pro:</b> <code>instantiate()</code> + <code>queue_free()</code> repetidos generan basura. Un pool reusa objetos inactivos: clave para rendimiento en 3D.</div>
+ <p>Define <code>cantidad</code> (1–12): el visor genera esa fila de cubos en círculo.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Genera <code>cantidad = 8</code> objetos.</p></div>`,
+ quiz:{q:"¿Por qué usar un object pool en 3D?",opts:["Para colores más vivos","Para reusar objetos y evitar coste de crear/destruir","Para mejor iluminación"],correct:1,fb:"Reusar evita el coste y la basura de instanciar cada vez."},
+ starter:`extends Node3D\nvar cantidad = 1\nfunc _ready():\n    for i in range(cantidad):\n        pass\n`,
+ solution:`extends Node3D\nvar cantidad = 8\nfunc _ready():\n    for i in range(cantidad):\n        pass\n`,
+ scene(code){
+   const n=Math.max(1,Math.min(12,Math.round(num(/cantidad\s*=\s*([\d]+)/,code,1))));
+   const meshes=[{shape:"plane",size:[12,1,12],color:0x141820,rough:1}];
+   for(let i=0;i<n;i++){const a=i/n*Math.PI*2;meshes.push({shape:"box",pos:[Math.cos(a)*3,0.6,Math.sin(a)*3],color:new THREE.Color().setHSL(i/n,0.6,0.6).getHex()});}
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,8,4]}],meshes,
+     hud:`instanciados = <b>${n}</b> objetos`,
+     update(t,objs){objs.forEach((o,i)=>{if(i===0)return;o.rotation.y=t+i;});}};
+ },
+ validate(code){
+   const n=num(/cantidad\s*=\s*([\d]+)/,code,1);
+   if(n>=8)return{ok:true,msg:"🏆 ¡8 objetos instanciados en círculo! Dominas el spawn en 3D."};
+   return{ok:false,msg:`cantidad=${n}.`,hint:"cantidad = 8"};
+ }
+},
+/* ---------- M8: Organización y buenas prácticas ---------- */
+{
+ module:"8 · Organización y buenas prácticas", file:"escenas.gd",
+ title:"Pensar en escenas pequeñas y reutilizables",
+ html:`
+ <p>La regla de oro en Godot: <b>cada cosa es una escena, y las escenas se componen</b>. En vez de un script gigante "Juego", tienes <code>Jugador.tscn</code>, <code>Enemigo.tscn</code>, <code>Moneda.tscn</code>, y los metes dentro de <code>Nivel.tscn</code>.</p>
+ <div class="analogy"><b>Analogía:</b> son como piezas de LEGO. Una pieza (escena) hace UNA cosa bien y no sabe nada del resto. Construyes el castillo combinándolas, no tallando una roca gigante.</div>
+ <p>Una escena bien hecha debería poder arrastrarse a cualquier nivel y funcionar sola. Si tu <code>Enemigo</code> necesita conocer detalles del <code>Nivel</code> para existir, está mal acoplado.</p>
+ <pre># Bien: el enemigo se basta a sí mismo
+extends CharacterBody3D
+class_name Enemigo
+var vida = 100
+func recibir_dano(d):
+    vida -= d
+    if vida <= 0:
+        queue_free()</pre>
+ <div class="warn"><b>Señal de alarma:</b> si te encuentras escribiendo <code>get_node("../../../Nivel/Cosa")</code> con muchos <code>../</code>, tu escena depende demasiado de dónde está colocada. Eso se rompe en cuanto la mueves.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Dale identidad a la escena con <code>class_name Enemigo</code> y haz que <code>recibir_dano</code> llame a <code>queue_free()</code> cuando la vida llegue a 0 o menos. (Validación por código, el visor muestra el árbol de escenas.)</p></div>`,
+ quiz:{q:"¿Qué indica un mal acoplamiento entre escenas?",opts:["Usar class_name","Muchos get_node(\"../../..\")","Usar señales"],correct:1,fb:"Las rutas con muchos ../ atan la escena a una ubicación fija; es frágil."},
+ starter:`extends CharacterBody3D\n# dale un nombre de clase\nvar vida = 100\nfunc recibir_dano(d):\n    vida -= d\n    # libera el nodo si muere\n`,
+ solution:`extends CharacterBody3D\nclass_name Enemigo\nvar vida = 100\nfunc recibir_dano(d):\n    vida -= d\n    if vida <= 0:\n        queue_free()\n`,
+ scene(){
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],grid:false,
+     meshes:[
+       {shape:"box",pos:[0,3,0],color:0x5fb8ff,size:[1.4,0.7,0.7]},
+       {shape:"box",pos:[-2,1.5,0],color:0x5cc88a,size:[1.2,0.6,0.6]},
+       {shape:"box",pos:[0,1.5,0],color:0x5cc88a,size:[1.2,0.6,0.6]},
+       {shape:"box",pos:[2,1.5,0],color:0x5cc88a,size:[1.2,0.6,0.6]},
+       {shape:"box",pos:[-2,0,0],color:0xe6c068,size:[1,0.5,0.5]},
+       {shape:"box",pos:[2,0,0],color:0xe6c068,size:[1,0.5,0.5]}
+     ],
+     lines:[{points:[[0,3,0],[-2,1.5,0]],color:0x9aa3b2},{points:[[0,3,0],[0,1.5,0]],color:0x9aa3b2},{points:[[0,3,0],[2,1.5,0]],color:0x9aa3b2},{points:[[-2,1.5,0],[-2,0,0]],color:0x9aa3b2},{points:[[2,1.5,0],[2,0,0]],color:0x9aa3b2}],
+     cam:{r:9,phi:1.2,theta:0.3,target:[0,1.5,0]},
+     hud:`<b>Nivel.tscn</b> (azul) compone<br>Jugador / Enemigo (verde)<br>que a su vez tienen hijos (amarillo)`};
+ },
+ validate(code){
+   const f=code.replace(/[ \t]+/g," ");
+   const hasClass=/class_name\s+Enemigo/.test(f);
+   const hasFree=/if\s+vida\s*<=\s*0\s*:[\s\S]*queue_free\s*\(\s*\)/.test(f)||/queue_free\s*\(\s*\)/.test(f)&&/vida\s*<=\s*0/.test(f);
+   if(hasClass&&hasFree)return{ok:true,msg:"¡Escena autónoma! Tiene identidad propia y se limpia sola al morir."};
+   if(!hasClass)return{ok:false,msg:"Falta darle nombre de clase.",hint:"Agrega: class_name Enemigo"};
+   return{ok:false,msg:"Falta liberar el nodo al morir.",hint:"if vida <= 0:\\n    queue_free()"};
+ }
+},
+{
+ module:"8 · Organización y buenas prácticas", file:"señales_org.gd",
+ title:"Comunicar hacia arriba con señales (no espagueti)",
+ html:`
+ <p>Regla práctica de oro en Godot: <b>"llama hacia abajo, emite hacia arriba"</b>. Un padre puede llamar funciones de sus hijos directamente. Pero un hijo NO debe buscar a su padre; debe <b>emitir una señal</b> y dejar que quien quiera escuche.</p>
+ <div class="analogy"><b>Analogía:</b> el enemigo grita "¡morí!" al aire (señal). No le importa quién escucha. El sistema de puntaje, el de sonido y el spawner pueden reaccionar — o no — sin que el enemigo los conozca. Eso es lo que evita el código espagueti.</div>
+ <pre># En el Enemigo (hijo):
+signal murio(puntos)
+
+func _morir():
+    murio.emit(50)
+    queue_free()
+
+# En el Nivel (padre), al instanciar:
+enemigo.murio.connect(_on_enemigo_murio)</pre>
+ <div class="warn"><b>El error clásico:</b> que el enemigo haga <code>get_parent().sumar_puntos(50)</code>. Funciona… hasta que reutilizas el enemigo en otra escena sin ese padre. La señal no tiene ese problema.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Declara <code>signal murio(puntos)</code> y en <code>_morir()</code> emítela con 50 puntos antes de <code>queue_free()</code>.</p></div>`,
+ quiz:{q:"¿Cómo debe comunicarse un hijo con su padre?",opts:["Con get_parent().funcion()","Emitiendo una señal","Modificando variables globales"],correct:1,fb:"Emitir hacia arriba desacopla: el hijo no necesita conocer al padre."},
+ starter:`extends CharacterBody3D\n# declara la señal de muerte con puntos\n\nfunc _morir():\n    # emite la señal con 50 y luego libera\n    queue_free()\n`,
+ solution:`extends CharacterBody3D\nsignal murio(puntos)\n\nfunc _morir():\n    murio.emit(50)\n    queue_free()\n`,
+ scene(){
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],grid:false,
+     meshes:[
+       {shape:"box",pos:[0,2.5,0],color:0x5cc88a,size:[1.2,0.6,0.6]},
+       {shape:"box",pos:[-2.5,0.4,0],color:0x5fb8ff,size:[1,0.5,0.5]},
+       {shape:"box",pos:[0,0.4,0],color:0x5fb8ff,size:[1,0.5,0.5]},
+       {shape:"box",pos:[2.5,0.4,0],color:0x5fb8ff,size:[1,0.5,0.5]}
+     ],
+     lines:[{points:[[0,2.5,0],[-2.5,0.4,0]],color:0xe6c068},{points:[[0,2.5,0],[0,0.4,0]],color:0xe6c068},{points:[[0,2.5,0],[2.5,0.4,0]],color:0xe6c068}],
+     cam:{r:9,phi:1.2,theta:0.2,target:[0,1.4,0]},
+     hud:`Verde: Enemigo emite <b>señal</b> (líneas amarillas)<br>Azul: Puntaje, Sonido, Spawner la escuchan`};
+ },
+ validate(code){
+   const f=code.replace(/[ \t]+/g," ");
+   const sig=/signal\s+murio\s*\(/.test(f);
+   const emit=/murio\.emit\s*\(\s*50\s*\)/.test(f);
+   if(sig&&emit)return{ok:true,msg:"¡Desacoplado! El enemigo avisa sin conocer a quién. Adiós espagueti."};
+   if(!sig)return{ok:false,msg:"Falta declarar la señal.",hint:"signal murio(puntos)"};
+   return{ok:false,msg:"Falta emitirla con 50.",hint:"murio.emit(50)"};
+ }
+},
+{
+ module:"8 · Organización y buenas prácticas", file:"autoload.gd",
+ title:"Autoloads (Singletons) para estado global",
+ html:`
+ <p>Algunas cosas son globales por naturaleza: el puntaje total, la configuración, el audio, el guardado. Para eso Godot tiene los <b>Autoload</b> (Singletons): un script que vive una sola vez y es accesible desde cualquier escena por su nombre.</p>
+ <pre># GameState.gd (registrado como Autoload llamado "GameState")
+extends Node
+var puntos = 0
+var nivel_actual = 1
+
+func sumar_puntos(p):
+    puntos += p
+
+# Desde CUALQUIER otra escena:
+GameState.sumar_puntos(50)</pre>
+ <div class="analogy"><b>Analogía:</b> es el "pizarrón de la oficina" que todos pueden leer y actualizar, sin tener que perseguirse entre escritorios. Pero ojo: si TODO va al pizarrón, vuelves a tener caos. Úsalo solo para lo realmente global.</div>
+ <div class="warn"><b>Trampa:</b> los autoloads son tentadores y fáciles de abusar. Si metes la lógica del jugador ahí "por comodidad", creas un acoplamiento global peor que el espagueti. Regla: autoload solo para datos/servicios que de verdad son únicos en todo el juego.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Crea el singleton: <code>extends Node</code>, una variable <code>puntos = 0</code>, y una función <code>sumar_puntos(p)</code> que haga <code>puntos += p</code>.</p></div>`,
+ quiz:{q:"¿Cuál es un buen uso de un Autoload?",opts:["La lógica de movimiento del jugador","El puntaje y la configuración global","Cada enemigo del nivel"],correct:1,fb:"Autoload = datos/servicios únicos en todo el juego (puntaje, config, audio, save)."},
+ starter:`extends Node\n# variable global de puntos\n\n# función para sumar puntos\n`,
+ solution:`extends Node\nvar puntos = 0\n\nfunc sumar_puntos(p):\n    puntos += p\n`,
+ scene(){
+   return {lights:[{type:"ambient",intensity:0.55},{type:"directional",pos:[4,7,4]}],grid:false,
+     meshes:[
+       {shape:"cylinder",pos:[0,2.6,0],color:0xcf9aff,r:0.7,h:0.5,material:"emissive",emis:0.5},
+       {shape:"box",pos:[-3,0.4,0],color:0x5cc88a,size:[1,0.5,0.5]},
+       {shape:"box",pos:[0,0.4,0],color:0x5cc88a,size:[1,0.5,0.5]},
+       {shape:"box",pos:[3,0.4,0],color:0x5cc88a,size:[1,0.5,0.5]}
+     ],
+     lines:[{points:[[-3,0.4,0],[0,2.6,0]],color:0xcf9aff},{points:[[0,0.4,0],[0,2.6,0]],color:0xcf9aff},{points:[[3,0.4,0],[0,2.6,0]],color:0xcf9aff}],
+     cam:{r:10,phi:1.15,theta:0.25,target:[0,1.4,0]},
+     hud:`Morado: <b>GameState</b> (Autoload único)<br>Verde: cualquier escena accede a él`};
+ },
+ validate(code){
+   const f=code.replace(/[ \t]+/g," ");
+   const ext=/extends\s+Node\b/.test(f);
+   const v=/var\s+puntos\s*=\s*0/.test(f);
+   const fn=/func\s+sumar_puntos\s*\(\s*p\s*\)[\s\S]*puntos\s*\+=\s*p/.test(f);
+   if(ext&&v&&fn)return{ok:true,msg:"¡Singleton listo! Accesible como GameState.sumar_puntos(50) desde todo el juego."};
+   if(!v)return{ok:false,msg:"Falta la variable global.",hint:"var puntos = 0"};
+   if(!fn)return{ok:false,msg:"Falta la función o el incremento.",hint:"func sumar_puntos(p):\\n    puntos += p"};
+   return{ok:false,msg:"Revisa el extends Node.",hint:"La primera línea debe ser: extends Node"};
+ }
+},
+{
+ module:"8 · Organización y buenas prácticas", file:"nombres.gd",
+ title:"Convenciones de nombres y código legible",
+ html:`
+ <p>El código se lee muchas más veces de las que se escribe. Godot tiene una guía de estilo oficial que conviene seguir desde el día uno; ahorra horas de confusión futura.</p>
+ <h3>Las reglas básicas</h3>
+ <ul>
+   <li><b>snake_case</b> para variables y funciones: <code>velocidad_max</code>, <code>recibir_dano()</code></li>
+   <li><b>PascalCase</b> para clases y nodos: <code>class_name EnemigoVolador</code></li>
+   <li><b>MAYÚSCULAS</b> para constantes: <code>const VELOCIDAD_BASE = 5.0</code></li>
+   <li>Prefijo <code>_</code> para lo privado/interno: <code>func _calcular_ruta()</code></li>
+ </ul>
+ <div class="analogy"><b>Analogía:</b> son como las señales de tránsito. Da igual cuál sea la regla exacta, lo importante es que TODOS sigan la misma. Un proyecto con nombres consistentes se lee como una autopista; uno inconsistente, como un cruce sin señales.</div>
+ <pre># Legible y predecible
+const VIDA_MAXIMA = 100
+var vida_actual = VIDA_MAXIMA
+var nombre_enemigo = "Goblin"
+
+func recibir_dano(cantidad):
+    vida_actual -= cantidad</pre>
+ <div class="warn"><b>Nombres que mienten:</b> evita <code>var x</code>, <code>var temp</code>, <code>var cosa</code>. Un buen nombre explica QUÉ es sin necesidad de comentarios. <code>var tiempo_recarga</code> dice más que <code>var t</code>.</div>
+ <div class="task"><h4>🎯 Práctica</h4><p>Aplica las convenciones: una constante <code>VIDA_MAXIMA = 100</code> (mayúsculas) y una variable <code>vida_actual = VIDA_MAXIMA</code> (snake_case).</p></div>`,
+ quiz:{q:"¿Cómo se nombra una constante por convención en Godot?",opts:["vidaMaxima","VIDA_MAXIMA","VidaMaxima"],correct:1,fb:"Constantes en MAYÚSCULAS con guion bajo: VIDA_MAXIMA."},
+ starter:`extends Node3D\n# constante de vida máxima (MAYÚSCULAS)\n\n# variable de vida actual (snake_case)\n`,
+ solution:`extends Node3D\nconst VIDA_MAXIMA = 100\nvar vida_actual = VIDA_MAXIMA\n`,
+ scene(){
+   return {lights:[{type:"ambient",intensity:0.6},{type:"directional",pos:[4,7,4]}],grid:true,
+     meshes:[{shape:"box",pos:[0,0.6,0],color:0x5fb8ff}],
+     cam:{r:7,phi:1.0,theta:0.6,target:[0,0.5,0]},
+     hud:`Buenas convenciones =<br><b>código que se lee solo</b>`};
+ },
+ validate(code){
+   const f=code.replace(/[ \t]+/g," ");
+   const c=/const\s+VIDA_MAXIMA\s*=\s*100/.test(f);
+   const v=/var\s+vida_actual\s*=\s*VIDA_MAXIMA/.test(f);
+   if(c&&v)return{ok:true,msg:"¡Convenciones aplicadas! Constante en MAYÚSCULAS, variable en snake_case."};
+   if(!c)return{ok:false,msg:"Falta la constante.",hint:"const VIDA_MAXIMA = 100"};
+   return{ok:false,msg:"Falta la variable que la usa.",hint:"var vida_actual = VIDA_MAXIMA"};
+ }
+},
+{
+ module:"8 · Organización y buenas prácticas", file:"scope.gd",
+ title:"Scope: el arte de terminar (lo más importante)",
+ html:`
+ <p>Esta lección no tiene un truco de código. Es la habilidad que más proyectos indie salva o hunde: <b>controlar el alcance (scope)</b>.</p>
+ <p>El error #1 de quien empieza es saltar directo a su "juego soñado": el RPG de mundo abierto, el shooter multijugador, el survival enorme. El 95% de esos proyectos nunca se terminan. No por falta de talento técnico, sino por scope imposible para una persona.</p>
+ <div class="analogy"><b>Analogía:</b> no aprendes a cocinar abriendo un restaurante de 5 estrellas. Aprendes haciendo un huevo frito, luego pasta, luego un plato completo. Cada juego pequeño TERMINADO te enseña 10 cosas que ningún tutorial menciona: menús, guardado, pausa, el "pegamento" aburrido que es el 80% de un juego real.</p></div>
+ <h3>La ruta realista</h3>
+ <ul>
+   <li><b>Juego 1:</b> Pong 3D o "recoge monedas con timer". Con menú y pantalla de fin. <b>Termínalo.</b></li>
+   <li><b>Juego 2:</b> un breakout o un endless runner simple. <b>Termínalo.</b></li>
+   <li><b>Juego 3:</b> algo con 2-3 mecánicas que conecten entre sí.</li>
+   <li>Recién ahí: acércate a tu idea soñada, ahora con scope partido en pedazos terminables.</li>
+ </ul>
+ <div class="warn"><b>Regla práctica:</b> imagina tu idea. Ahora córtale el 70%. Eso que queda probablemente sigue siendo demasiado grande para tu primer proyecto. Un juego pequeño terminado vale infinitamente más que uno enorme abandonado al 40%.</div>
+ <p>Un <b>game jam</b> (como Ludum Dare, 48-72h) te enseña más sobre hacer juegos que meses de tutoriales, justamente porque te obliga a terminar algo con scope minúsculo.</p>
+ <div class="task"><h4>🎯 Práctica (reflexión + código)</h4><p>Como cierre simbólico: crea una variable <code>scope_realista = true</code> y una función <code>terminar_juego()</code> que imprima <code>"Juego terminado"</code>. El compromiso de terminar es la verdadera lección.</p></div>`,
+ quiz:{q:"¿Cuál es el error #1 que hunde proyectos indie?",opts:["No saber shaders","Scope demasiado grande para terminarlo","Usar Godot en vez de Unity"],correct:1,fb:"El scope excesivo. Terminar algo pequeño > abandonar algo enorme."},
+ starter:`extends Node\n# compromiso de scope realista\n\nfunc terminar_juego():\n    # imprime que terminaste\n    pass\n`,
+ solution:`extends Node\nvar scope_realista = true\n\nfunc terminar_juego():\n    print("Juego terminado")\n`,
+ scene(){
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],grid:false,
+     meshes:[
+       {shape:"box",pos:[-2.5,0.5,0],color:0x5cc88a,size:[1,1,1]},
+       {shape:"box",pos:[0,0.5,0],color:0x5fb8ff,size:[1,1,1]},
+       {shape:"box",pos:[2.5,0.5,0],color:0xe6c068,size:[1,1,1]},
+       {shape:"box",pos:[5.5,1.5,0],material:"wire",color:0x444c5a,size:[3,3,3]}
+     ],
+     cam:{r:11,phi:1.1,theta:0.35,target:[1.5,0.8,0]},
+     hud:`Verde→azul→amarillo: juegos pequeños <b>terminados</b><br>Gris grande: el "sueño", al final y por partes`};
+ },
+ validate(code){
+   const f=code.replace(/[ \t]+/g," ");
+   const v=/scope_realista\s*=\s*true/.test(f);
+   const p=/print\s*\(\s*"Juego terminado"\s*\)/.test(f);
+   if(v&&p)return{ok:true,msg:"🏆 ¡La lección más valiosa! Scope acotado + el hábito de TERMINAR. Ahora ve y haz tu Pong 3D."};
+   if(!v)return{ok:false,msg:"Falta el compromiso de scope.",hint:"var scope_realista = true"};
+   return{ok:false,msg:"Falta terminar el juego.",hint:'print("Juego terminado")'};
+ }
+},
+/* ---------- M9: Shooters (FPS) ---------- */
+{
+ module:"9 · Shooters (FPS)", file:"fps_camara.gd",
+ title:"Cámara FPS y sensibilidad del mouse",
+ html:`
+ <p>Un FPS empieza por la cámara. El patrón estándar: el <b>cuerpo</b> (CharacterBody3D) gira en horizontal (eje Y) y la <b>cámara</b> hija gira en vertical (eje X). Separarlos evita que el cuerpo se incline.</p>
+ <pre>func _input(event):
+    if event is InputEventMouseMotion:
+        rotate_y(-event.relative.x * sensibilidad)
+        camara.rotate_x(-event.relative.y * sensibilidad)
+        # limitar para no dar voltereta
+        camara.rotation.x = clamp(camara.rotation.x, -1.5, 1.5)</pre>
+ <div class="analogy"><b>Analogía:</b> tu cuerpo es un banco giratorio (solo gira a los lados) y tu cuello es la cámara (mira arriba/abajo). Nunca giras la cabeza 360° verticalmente — por eso el <code>clamp</code>.</div>
+ <div class="warn"><b>Clave:</b> captura el mouse con <code>Input.mouse_mode = Input.MOUSE_MODE_CAPTURED</code> para que no se salga de la ventana.</div>
+ <p>Ajusta la <code>sensibilidad</code>: el visor mueve la mira/cámara a esa velocidad simulando el giro.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Sube la <code>sensibilidad = 0.5</code> para un giro más rápido.</p></div>`,
+ quiz:{q:"¿Por qué se hace clamp a la rotación vertical de la cámara?",opts:["Para ahorrar memoria","Para no dar volteretas verticales","Para mover más rápido"],correct:1,fb:"El clamp impide mirar más allá de arriba/abajo y voltearse."},
+ starter:`extends CharacterBody3D\nvar sensibilidad = 0.1\nfunc _input(event):\n    pass\n`,
+ solution:`extends CharacterBody3D\nvar sensibilidad = 0.5\nfunc _input(event):\n    pass\n`,
+ scene(code){
+   const s=num(/sensibilidad\s*=\s*([\d.]+)/,code,0.1);
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],
+     meshes:[
+       {shape:"box",pos:[-4,0.6,-3],color:0xe2706f},{shape:"box",pos:[4,0.6,-2],color:0xe2706f},
+       {shape:"box",pos:[0,0.6,-5],color:0xe2706f},{shape:"plane",size:[16,1,16],color:0x141820,rough:1}
+     ],
+     lines:[{points:[[0,1.4,0],[0,1.4,-8]],color:0xe6c068}],
+     cam:{r:0.2,phi:1.5,theta:0,target:[0,1.4,0]},
+     hud:`sensibilidad = <b>${s}</b> · vista en 1ª persona`,
+     update(t,objs){orbit.theta=Math.sin(t*0.6)*s*1.2;orbit.target=[0,1.4,0];orbit.r=0.2;}};
+ },
+ validate(code){
+   const s=num(/sensibilidad\s*=\s*([\d.]+)/,code,0.1);
+   if(s>=0.5)return{ok:true,msg:"¡Cámara FPS responsiva! La vista barre la escena más rápido."};
+   return{ok:false,msg:`sensibilidad=${s}.`,hint:"sensibilidad = 0.5"};
+ }
+},
+{
+ module:"9 · Shooters (FPS)", file:"hitscan.gd",
+ title:"Disparo hitscan (raycast instantáneo)",
+ html:`
+ <p>El disparo <b>hitscan</b> es instantáneo: lanzas un <code>RayCast3D</code> desde la cámara hacia el centro de la mira y, si golpea algo, le aplicas daño en el mismo frame. Así dispara la mayoría de shooters realistas (rifles, pistolas).</p>
+ <pre>func disparar():
+    if rayo.is_colliding():
+        var blanco = rayo.get_collider()
+        if blanco.has_method("recibir_dano"):
+            blanco.recibir_dano(dano)</pre>
+ <div class="analogy"><b>Analogía:</b> hitscan es como un puntero láser: en el instante que aprietas, ya sabes qué tocaste. No hay bala viajando. Bueno para precisión, malo si quieres ver la bala volar.</div>
+ <p>Controla el <code>alcance</code> del rayo. Cuando llega al enemigo (a 6 u), se marca el impacto en verde.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Extiende el <code>alcance = 8.0</code> para alcanzar al enemigo lejano.</p></div>`,
+ quiz:{q:"El disparo hitscan…",opts:["Lanza una bala física que viaja","Golpea instantáneamente vía raycast","Solo funciona de cerca"],correct:1,fb:"Hitscan = impacto instantáneo con raycast, sin proyectil que viaje."},
+ starter:`extends Node3D\nvar alcance = 3.0\nvar dano = 25\nfunc disparar():\n    pass\n`,
+ solution:`extends Node3D\nvar alcance = 8.0\nvar dano = 25\nfunc disparar():\n    pass\n`,
+ scene(code){
+   const a=num(/alcance\s*=\s*([\d.]+)/,code,3);
+   const dist=6;const hit=a>=dist;
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],
+     meshes:[
+       {shape:"box",pos:[0,1.2,0],color:0x5fb8ff,size:[0.4,0.4,0.6]},
+       {shape:"cylinder",pos:[0,1.2,-dist],color:hit?0x5cc88a:0xe2706f,r:0.5,h:1.6},
+       {shape:"plane",size:[16,1,16],color:0x141820,rough:1}
+     ],
+     lines:[{points:[[0,1.2,0],[0,1.2,-Math.min(a,dist)]],color:hit?0x5cc88a:0xe6c068}],
+     cam:{r:7,phi:1.25,theta:0.5,target:[0,1,-3]},
+     hud:`alcance=<b>${a}</b> · enemigo a 6 · ${hit?'<b style="color:#5cc88a">IMPACTO (-'+25+')</b>':'<span style="color:#e2706f">no alcanza</span>'}`};
+ },
+ validate(code){
+   const a=num(/alcance\s*=\s*([\d.]+)/,code,3);
+   if(a>=6)return{ok:true,msg:"¡Hitscan conectado! El rayo toca al enemigo y le aplicarías daño al instante."};
+   return{ok:false,msg:`alcance=${a}, no llega a 6.`,hint:"alcance = 8.0"};
+ }
+},
+{
+ module:"9 · Shooters (FPS)", file:"proyectil.gd",
+ title:"Proyectiles físicos (balas que viajan)",
+ html:`
+ <p>A diferencia del hitscan, un <b>proyectil</b> es un nodo real que viaja por el aire. Sirve para cohetes, flechas, plasma — cosas que el jugador ve volar y puede esquivar.</p>
+ <pre>func _physics_process(delta):
+    position += transform.basis.z * -velocidad * delta
+    # transform.basis.z = hacia donde "mira" el proyectil</pre>
+ <div class="analogy"><b>Analogía:</b> hitscan es un láser; el proyectil es una pelota de béisbol. Tarda en llegar, puedes verla, y a larga distancia tienes que "liderar" el tiro (apuntar adelante del blanco que se mueve).</div>
+ <div class="warn"><b>Pro:</b> dale al proyectil un tiempo de vida y <code>queue_free()</code> al impactar o al expirar, o llenarás la escena de balas zombi que matan el rendimiento.</div>
+ <p>Ajusta la <code>velocidad</code>: el visor lanza la bala a esa rapidez hacia el enemigo (animado, en bucle).</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Acelera la bala con <code>velocidad = 12.0</code>.</p></div>`,
+ quiz:{q:"¿Cuándo conviene un proyectil físico sobre hitscan?",opts:["Para un rifle de precisión instantáneo","Para un cohete que el jugador ve volar y esquivar","Nunca, hitscan es mejor siempre"],correct:1,fb:"Proyectiles para cosas visibles/esquivables: cohetes, flechas, plasma."},
+ starter:`extends Area3D\nvar velocidad = 3.0\nfunc _physics_process(delta):\n    pass\n`,
+ solution:`extends Area3D\nvar velocidad = 12.0\nfunc _physics_process(delta):\n    pass\n`,
+ scene(code){
+   const v=num(/velocidad\s*=\s*([\d.]+)/,code,3);
+   const dist=7;
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],
+     meshes:[
+       {shape:"box",pos:[0,1,0],color:0x5fb8ff,size:[0.4,0.4,0.6]},
+       {shape:"cylinder",pos:[0,1,-dist],color:0xe2706f,r:0.5,h:1.6},
+       {shape:"sphere",pos:[0,1,0],color:0xe6c068,r:0.18,material:"emissive",emis:1},
+       {shape:"plane",size:[18,1,18],color:0x141820,rough:1}
+     ],
+     cam:{r:8,phi:1.2,theta:0.5,target:[0,1,-3.5]},
+     hud:`velocidad bala = <b>${v}</b> u/s`,
+     update(t,objs){const bala=objs[2];if(!bala)return;const cycle=(t*v*0.12)%1;bala.position.z=-cycle*dist;}};
+ },
+ validate(code){
+   const v=num(/velocidad\s*=\s*([\d.]+)/,code,3);
+   if(v>=12)return{ok:true,msg:"¡Bala veloz! Viaja visible hacia el blanco; recuerda darle queue_free al impactar."};
+   return{ok:false,msg:`velocidad=${v}.`,hint:"velocidad = 12.0"};
+ }
+},
+{
+ module:"9 · Shooters (FPS)", file:"vida_enemigo.gd",
+ title:"Daño, vida y muerte de enemigos",
+ html:`
+ <p>El núcleo del combate: el enemigo tiene <code>vida</code>, recibe <code>dano</code>, y muere (con <code>queue_free()</code> o una animación) al llegar a 0. Idealmente emite una señal al morir para que el resto del juego reaccione.</p>
+ <pre>signal murio
+var vida = 100
+
+func recibir_dano(cantidad):
+    vida -= cantidad
+    if vida <= 0:
+        murio.emit()
+        queue_free()</pre>
+ <p>Controla cuánto <code>dano</code> hace cada disparo. El visor simula varios impactos y vacía la barra de vida (100). Si el daño total la agota, el enemigo "muere" (se desvanece).</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Sube el <code>dano = 50</code> por disparo (lo mata en 2 tiros).</p></div>`,
+ quiz:{q:"¿Qué conviene hacer cuando el enemigo muere, además de eliminarlo?",opts:["Nada más","Emitir una señal para que el juego reaccione","Reiniciar la escena"],correct:1,fb:"Emitir señal (murio) permite sumar puntos, soltar loot, sonido, etc., desacoplado."},
+ starter:`extends CharacterBody3D\nsignal murio\nvar vida = 100\nvar dano = 20\nfunc recibir_dano(cantidad):\n    vida -= cantidad\n`,
+ solution:`extends CharacterBody3D\nsignal murio\nvar vida = 100\nvar dano = 50\nfunc recibir_dano(cantidad):\n    vida -= cantidad\n    if vida <= 0:\n        murio.emit()\n        queue_free()\n`,
+ scene(code){
+   const d=num(/dano\s*=\s*([\d.]+)/,code,20);
+   const shots=4;
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],
+     meshes:[
+       {shape:"cylinder",pos:[0,1,0],color:0xe2706f,r:0.5,h:1.8},
+       {shape:"plane",size:[12,1,12],color:0x141820,rough:1}
+     ],
+     cam:{r:7,phi:1.2,theta:0.5,target:[0,1,0]},
+     hud:`daño/disparo = <b>${d}</b> · vida enemigo 100`,
+     update(t,objs){const e=objs[0];if(!e)return;const cycle=Math.floor((t*0.8)%(shots+2));const vidaRest=Math.max(0,100-cycle*d);e.scale.y=vidaRest/100*1+0.001;e.material.opacity=vidaRest<=0?0.15:1;e.material.transparent=true;
+       document.getElementById("viewerhud").innerHTML=`daño/disparo = <b>${d}</b> · vida restante: <b>${vidaRest}</b>${vidaRest<=0?' <span style="color:#5cc88a">MUERTO</span>':''}`;}};
+ },
+ validate(code){
+   const f=code.replace(/[ \t]+/g," ");
+   const d=num(/dano\s*=\s*([\d.]+)/,code,20);
+   const dies=/if\s+vida\s*<=\s*0\s*:[\s\S]*queue_free/.test(f);
+   if(d>=50&&dies)return{ok:true,msg:"¡Combate funcional! 50 de daño + muerte al llegar a 0. Lo matas en 2 tiros."};
+   if(d<50)return{ok:false,msg:`dano=${d}, súbelo.`,hint:"dano = 50"};
+   return{ok:false,msg:"Falta la lógica de muerte.",hint:"if vida <= 0:\\n    murio.emit()\\n    queue_free()"};
+ }
+},
+{
+ module:"9 · Shooters (FPS)", file:"municion.gd",
+ title:"Munición, cadencia y recarga",
+ html:`
+ <p>Lo que da textura a un arma: cuántas balas tiene (<code>municion</code>), cada cuánto puede disparar (<b>cadencia</b>, controlada por un <code>Timer</code> o cooldown) y la <b>recarga</b>.</p>
+ <pre>var municion = 30
+var cargador_max = 30
+var puede_disparar = true
+
+func disparar():
+    if municion > 0 and puede_disparar:
+        municion -= 1
+        puede_disparar = false
+        $CooldownTimer.start()  # vuelve a true al terminar
+
+func recargar():
+    municion = cargador_max</pre>
+ <div class="analogy"><b>Analogía:</b> la cadencia es como el cooldown de un microondas: aunque aprietes el botón mil veces, no calienta más rápido. El Timer impone el ritmo del arma.</div>
+ <p>Define el <code>cargador_max</code>. El visor simula vaciar el cargador disparo a disparo y recargar en bucle.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Pon un cargador de <code>cargador_max = 30</code>.</p></div>`,
+ quiz:{q:"¿Qué controla la cadencia de disparo?",opts:["Un Timer / cooldown entre disparos","La cantidad de munición","El color del arma"],correct:0,fb:"Un Timer o cooldown limita cada cuánto puedes volver a disparar."},
+ starter:`extends Node3D\nvar municion = 30\nvar cargador_max = 10\nfunc recargar():\n    municion = cargador_max\n`,
+ solution:`extends Node3D\nvar municion = 30\nvar cargador_max = 30\nfunc recargar():\n    municion = cargador_max\n`,
+ scene(code){
+   const cap=Math.max(1,Math.round(num(/cargador_max\s*=\s*([\d]+)/,code,10)));
+   return {lights:[{type:"ambient",intensity:0.55},{type:"directional",pos:[4,7,4]}],
+     meshes:[{shape:"box",pos:[0,0.8,0],color:0x5fb8ff,size:[1.6,0.4,0.4]},{shape:"box",pos:[-0.5,0.5,0],color:0x444c5a,size:[0.4,0.6,0.4]},{shape:"plane",size:[10,1,10],color:0x141820,rough:1}],
+     cam:{r:5,phi:1.2,theta:0.6,target:[0,0.7,0]},
+     hud:`cargador = <b>${cap}</b> balas`,
+     update(t){const cycle=Math.floor((t*3)%(cap+5));const balas=cycle<cap?cap-cycle:(cycle<cap+3?0:cap);const recargando=cycle>=cap&&cycle<cap+3;document.getElementById("viewerhud").innerHTML=`cargador ${cap} · <b>${balas}</b> ${recargando?'<span style="color:#e6c068">RECARGANDO…</span>':'balas'}`;}};
+ },
+ validate(code){
+   const cap=num(/cargador_max\s*=\s*([\d]+)/,code,10);
+   if(cap>=30)return{ok:true,msg:"¡Cargador de 30! Combínalo con un Timer para la cadencia y ya tienes un arma creíble."};
+   return{ok:false,msg:`cargador_max=${cap}.`,hint:"cargador_max = 30"};
+ }
+},
+{
+ module:"9 · Shooters (FPS)", file:"ia_enemigo.gd",
+ title:"IA básica: enemigo que te ve y dispara",
+ html:`
+ <p>Una IA de enemigo de shooter, en su forma mínima, es una <b>máquina de estados</b>: <code>PATRULLA</code> → (te detecta con un raycast) → <code>PERSIGUE</code> → (estás a tiro) → <code>DISPARA</code>.</p>
+ <pre>enum Estado { PATRULLA, PERSIGUE, DISPARA }
+var estado = Estado.PATRULLA
+
+func _physics_process(_d):
+    match estado:
+        Estado.PATRULLA:
+            if veo_al_jugador():
+                estado = Estado.PERSIGUE
+        Estado.PERSIGUE:
+            ir_hacia(jugador)
+            if distancia() < rango_disparo:
+                estado = Estado.DISPARA
+        Estado.DISPARA:
+            disparar()</pre>
+ <div class="analogy"><b>Analogía:</b> es un guardia con una rutina clara. Patrulla aburrido, te ve y se alerta, se acerca, y solo dispara cuando estás a tiro. Cada estado tiene UNA tarea, sin ifs gigantes mezclados.</div>
+ <p>Ajusta el <code>rango_disparo</code>: cuando el jugador (azul) entra en ese radio, el enemigo (rojo) pasa a DISPARA y verás la línea de fuego.</p>
+ <div class="task"><h4>🎯 Práctica</h4><p>Amplía el <code>rango_disparo = 5.0</code> para que dispare desde más lejos.</p></div>`,
+ quiz:{q:"¿Qué estructura organiza bien una IA con varios comportamientos?",opts:["Un solo if gigante","Una máquina de estados (FSM)","Variables globales sueltas"],correct:1,fb:"La FSM separa cada comportamiento en un estado con una tarea clara."},
+ starter:`extends CharacterBody3D\nenum Estado { PATRULLA, PERSIGUE, DISPARA }\nvar estado = Estado.PATRULLA\nvar rango_disparo = 2.0\nfunc _physics_process(_d):\n    pass\n`,
+ solution:`extends CharacterBody3D\nenum Estado { PATRULLA, PERSIGUE, DISPARA }\nvar estado = Estado.PATRULLA\nvar rango_disparo = 5.0\nfunc _physics_process(_d):\n    pass\n`,
+ scene(code){
+   const r=num(/rango_disparo\s*=\s*([\d.]+)/,code,2);
+   return {lights:[{type:"ambient",intensity:0.5},{type:"directional",pos:[4,7,4]}],
+     meshes:[
+       {shape:"cylinder",pos:[0,1,-4],color:0xe2706f,r:0.5,h:1.8},
+       {shape:"box",pos:[0,1,0],color:0x5fb8ff,size:[0.6,1.6,0.6]},
+       {shape:"plane",size:[16,1,16],color:0x141820,rough:1}
+     ],
+     cam:{r:9,phi:1.2,theta:0.5,target:[0,1,-2]},
+     hud:`rango_disparo = <b>${r}</b>`,
+     update(t,objs){const enemy=objs[0],player=objs[1];if(!enemy||!player)return;
+       const px=Math.sin(t*0.7)*3;player.position.x=px;
+       const dx=px-0, dz=0-(-4);const dist=Math.sqrt(dx*dx+dz*dz);
+       const dispara=dist<=r;
+       enemy.material.emissive=new THREE.Color(dispara?0xe2706f:0x000000);enemy.material.emissiveIntensity=dispara?0.7:0;
+       // línea de fuego
+       V.helpers.filter(h=>h.isLine).forEach(h=>V.scene.remove(h));
+       if(dispara){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1,-4),new THREE.Vector3(px,1,0)]);const ln=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xe6c068}));V.scene.add(ln);V.helpers.push(ln);}
+       document.getElementById("viewerhud").innerHTML=`rango=<b>${r}</b> · dist=${dist.toFixed(1)} · estado: <b style="color:${dispara?'#e2706f':'#5cc88a'}">${dispara?'DISPARA':'PATRULLA/PERSIGUE'}</b>`;}};
+ },
+ validate(code){
+   const r=num(/rango_disparo\s*=\s*([\d.]+)/,code,2);
+   if(r>=5)return{ok:true,msg:"🏆 ¡IA con FSM funcionando! El enemigo cambia a DISPARA al tenerte a tiro. Ya tienes el esqueleto de un FPS."};
+   return{ok:false,msg:`rango_disparo=${r}.`,hint:"rango_disparo = 5.0"};
+ }
+},
+];
+
+/* ============================================================================
+   ESTADO + UI
+   ============================================================================ */
+let current=0;
+const done=new Array(LESSONS.length).fill(false);
+const read=new Array(LESSONS.length).fill(0);     // % leído (scroll)
+const quizDone=new Array(LESSONS.length).fill(false);
+const userCode=LESSONS.map(l=>l.starter);
+
+const lessonlist=document.getElementById("lessonlist");
+function pctFor(i){
+  // mezcla: leído(40) + quiz(20) + práctica(40)
+  let p=Math.round(read[i]*0.4 + (quizDone[i]?20:0) + (done[i]?40:0));
+  if(done[i]&&quizDone[i]&&read[i]>=95)p=100;
+  return Math.min(100,p);
+}
+function renderSidebar(){
+  lessonlist.innerHTML="";let lastMod=null;
+  LESSONS.forEach((l,idx)=>{
+    if(l.module!==lastMod){const mt=document.createElement("div");mt.className="module-title";mt.textContent=l.module;lessonlist.appendChild(mt);lastMod=l.module;}
+    const el=document.createElement("div");
+    const complete=pctFor(idx)===100;
+    el.className="lesson"+(idx===current?" active":"")+(complete?" done":"");
+    el.innerHTML=`<span class="check">${complete?"✓":""}</span><span style="flex:1">${idx+1}. ${l.title}</span><span class="pct">${pctFor(idx)}%</span>`;
+    el.onclick=()=>{loadLesson(idx);if(window.innerWidth<=980)document.getElementById("sidebar").classList.remove("open");};
+    lessonlist.appendChild(el);
+  });
+  const total=LESSONS.length, comp=LESSONS.map((_,i)=>pctFor(i)===100).filter(Boolean).length;
+  document.getElementById("progressfill").style.width=(comp/total*100)+"%";
+  document.getElementById("progresstext").textContent=`${comp} de ${total} lecciones`;
+}
+
+const lessonpane=document.getElementById("lessonpane");
+const editor=document.getElementById("editor");
+const highlightEl=document.getElementById("highlight");
+const linenums=document.getElementById("linenums");
+const consoleEl=document.getElementById("console");
+
+function loadLesson(idx){
+  current=idx;const l=LESSONS[idx];
+  document.getElementById("topTitle").textContent=`${idx+1}. ${l.title}`;
+  document.getElementById("fname").textContent=l.file;
+  let quizHtml="";
+  if(l.quiz){
+    quizHtml=`<div class="quiz" id="quizBox"><h4>❓ Quiz</h4><div class="q">${l.quiz.q}</div>${l.quiz.opts.map((o,k)=>`<button class="opt" data-k="${k}">${o}</button>`).join("")}<div class="feedback" id="quizFb"></div></div>`;
+  }
+  lessonpane.innerHTML=`<h2>${l.title}</h2><div class="subtitle">${l.module}</div>${l.html}${quizHtml}
+    <div id="navbtns"><button id="prevBtn">← Anterior</button><button id="nextBtn" class="next">Siguiente →</button></div>`;
+  lessonpane.scrollTop=0;
+  // quiz handlers
+  if(l.quiz){
+    const fb=document.getElementById("quizFb");
+    lessonpane.querySelectorAll(".opt").forEach(btn=>{
+      if(quizDone[idx]&&parseInt(btn.dataset.k)===l.quiz.correct)btn.classList.add("correct");
+      btn.onclick=()=>{
+        const k=parseInt(btn.dataset.k);
+        lessonpane.querySelectorAll(".opt").forEach(b=>b.disabled=true);
+        if(k===l.quiz.correct){btn.classList.add("correct");fb.style.color="var(--green)";fb.textContent="✓ "+l.quiz.fb;quizDone[idx]=true;renderSidebar();}
+        else{btn.classList.add("wrong");lessonpane.querySelectorAll(".opt")[l.quiz.correct].classList.add("correct");fb.style.color="var(--red)";fb.textContent="✗ Repasa la lección. "+l.quiz.fb;}
+      };
+    });
+  }
+  editor.value=userCode[idx];updateEditor();
+  consoleEl.innerHTML=`<span class="sys">// Pulsa ▶ Ejecutar para ver tu código en el visor 3D y validarlo.</span>`;
+  document.getElementById("prevBtn").disabled=idx===0;
+  document.getElementById("nextBtn").disabled=idx===LESSONS.length-1;
+  document.getElementById("prevBtn").onclick=()=>loadLesson(idx-1);
+  document.getElementById("nextBtn").onclick=()=>loadLesson(idx+1);
+  // render escena inicial con el starter
+  try{renderScene(l.scene(editor.value));}catch(e){console.error(e);}
+  // tracking de lectura por scroll
+  trackRead();
+  renderSidebar();
+}
+function trackRead(){
+  const update=()=>{
+    const max=lessonpane.scrollHeight-lessonpane.clientHeight;
+    const p=max<=0?100:Math.min(100,Math.round(lessonpane.scrollTop/max*100));
+    if(p>read[current]){read[current]=p;renderSidebar();}
+  };
+  lessonpane.onscroll=update;
+  setTimeout(()=>{if(lessonpane.scrollHeight<=lessonpane.clientHeight+10){read[current]=Math.max(read[current],100);renderSidebar();}},120);
+}
+
+function updateEditor(){
+  highlightEl.innerHTML=highlight(editor.value)+"\n";
+  const lines=editor.value.split("\n").length;let nums="";for(let i=1;i<=lines;i++)nums+=i+"\n";
+  linenums.textContent=nums;
+}
+editor.addEventListener("input",()=>{userCode[current]=editor.value;updateEditor();});
+editor.addEventListener("scroll",()=>{highlightEl.scrollTop=editor.scrollTop;highlightEl.scrollLeft=editor.scrollLeft;linenums.scrollTop=editor.scrollTop;});
+editor.addEventListener("keydown",e=>{
+  if(e.key==="Tab"){e.preventDefault();const s=editor.selectionStart;editor.value=editor.value.slice(0,s)+"    "+editor.value.slice(editor.selectionEnd);editor.selectionStart=editor.selectionEnd=s+4;userCode[current]=editor.value;updateEditor();}
+  if(e.key==="Enter"){const s=editor.selectionStart;const before=editor.value.slice(0,s);const ls=before.lastIndexOf("\n")+1;const cur=before.slice(ls);const ind=cur.match(/^\s*/)[0];const extra=cur.trim().endsWith(":")||cur.trim().endsWith("{")?"    ":"";e.preventDefault();const ins="\n"+ind+extra;editor.value=editor.value.slice(0,s)+ins+editor.value.slice(editor.selectionEnd);editor.selectionStart=editor.selectionEnd=s+ins.length;userCode[current]=editor.value;updateEditor();}
+  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();runCurrent();}
+});
+
+function logLine(t,c){const d=document.createElement("div");d.className=c||"out";d.textContent=t;consoleEl.appendChild(d);}
+function runCurrent(){
+  consoleEl.innerHTML="";const l=LESSONS[current];const code=editor.value;
+  // actualizar visor
+  try{renderScene(l.scene(code));}catch(e){logLine("⚠ Error en escena: "+e,"err");}
+  // prints
+  const outs=logPrints(code);
+  if(outs.length){logLine("// Salida:","sys");outs.forEach(o=>logLine(String(o),"out"));}
+  // validar
+  const res=l.validate(code);logLine("","");
+  if(res.ok){logLine("✓ "+res.msg,"ok");
+    if(!done[current]){done[current]=true;renderSidebar();}
+  }else{logLine("✗ "+res.msg,"err");if(res.hint)logLine("💡 "+res.hint,"hint");}
+  consoleEl.scrollTop=consoleEl.scrollHeight;
+}
+document.getElementById("runbtn").onclick=runCurrent;
+document.getElementById("resetbtn").onclick=()=>{editor.value=LESSONS[current].starter;userCode[current]=editor.value;updateEditor();renderScene(LESSONS[current].scene(editor.value));consoleEl.innerHTML=`<span class="sys">// Código reiniciado.</span>`;};
+document.getElementById("solbtn").onclick=()=>{editor.value=LESSONS[current].solution;userCode[current]=editor.value;updateEditor();renderScene(LESSONS[current].scene(editor.value));consoleEl.innerHTML=`<span class="hint">// Solución cargada. Pulsa Ejecutar para verla en el visor.</span>`;};
+document.getElementById("resetProg").onclick=()=>{if(confirm("¿Reiniciar todo el progreso?")){done.fill(false);read.fill(0);quizDone.fill(false);LESSONS.forEach((l,i)=>userCode[i]=l.starter);loadLesson(0);}};
+document.getElementById("menubtn").onclick=()=>document.getElementById("sidebar").classList.toggle("open");
+document.getElementById("playToggle").onclick=function(){V.paused=!V.paused;this.textContent=V.paused?"▶ Reanudar":"⏸ Pausar";};
+document.getElementById("camReset").onclick=()=>{orbit={...V.defaultCam};};
+
+/* INICIO */
+initViewer();
+renderSidebar();
+loadLesson(0);
+</script>
+</body>
+</html>
