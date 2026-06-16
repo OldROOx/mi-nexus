@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Shield, TrendingUp, Search, Cpu, ArrowLeft, Lock, Star,
-  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone,
+  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud,
 } from "lucide-react";
 
 /* ============================================================
@@ -35,6 +35,8 @@ import FinStack from "./finstack/App.jsx";
 import Godot from "./godot/App.jsx";
 import Rock from "./rock/App.jsx";
 import Flutter from "./flutter/App.jsx";
+import Robotica from "./robotica/App.jsx";
+import IoTCloud from "./iotcloud/App.jsx";
 
 const HUB_KEY = "nexus_hub_v1";
 
@@ -82,6 +84,18 @@ function statFlutter() {
   const leidas = Object.keys(d.read).length;
   return { xp: leidas * 100, label: `${leidas} lecciones` };
 }
+function statRobotica() {
+  const d = read("robotica_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: `${leidas} lecciones` };
+}
+function statIoTCloud() {
+  const d = read("iotcloud_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: `${leidas} lecciones` };
+}
 
 const WORLDS = [
   { id: "cyber",  name: "CyberLab",          sub: "Hackea aprendiendo",        icon: Shield,      color: "#4dffa0", glow: "rgba(77,255,160,.5)",  Comp: CyberLab,  stat: statCyberlab },
@@ -91,6 +105,8 @@ const WORLDS = [
   { id: "godot",  name: "Godot 3D",          sub: "De cero a experto en 3D",   icon: Box,         color: "#478cbf", glow: "rgba(71,140,191,.5)",  Comp: Godot,     stat: statGodot },
   { id: "rock",   name: "Historia del Rock",  sub: "Del blues al streaming",    icon: Disc3,       color: "#e2706f", glow: "rgba(226,112,111,.5)", Comp: Rock,      stat: statRock },
   { id: "flutter", name: "Flutter + Dart",     sub: "De cero a app móvil",       icon: Smartphone,  color: "#42A5F5", glow: "rgba(66,165,245,.5)",  Comp: Flutter,   stat: statFlutter },
+  { id: "robotica", name: "Robótica & IoT",    sub: "De cero a tu araña robot",  icon: Bot,         color: "#ff5a1f", glow: "rgba(255,90,31,.5)",   Comp: Robotica,  stat: statRobotica },
+  { id: "iotcloud", name: "IoT en la Nube",    sub: "Nivel profesional / CV",    icon: Cloud,       color: "#22d3ee", glow: "rgba(34,211,238,.5)",  Comp: IoTCloud,  stat: statIoTCloud },
 ];
 
 const RANKS = [
@@ -264,7 +280,7 @@ export default function App() {
             <br />
             <button className="nx-reset" onClick={() => {
               if (window.confirm("¿Borrar TODO el progreso de TODOS los mundos? No se puede deshacer.")) {
-                ["cyberlab_progress_v1", "wsa_progress", "finstack:v1", "deductiva_progress_v1", "godot3d_progress_v1", "rock_progress_v1", "flutter_progress_v1", HUB_KEY].forEach((k) => localStorage.removeItem(k));
+                ["cyberlab_progress_v1", "wsa_progress", "finstack:v1", "deductiva_progress_v1", "godot3d_progress_v1", "rock_progress_v1", "flutter_progress_v1", "robotica_progress_v1", "iotcloud_progress_v1", HUB_KEY].forEach((k) => localStorage.removeItem(k));
                 setHub({ visited: {} }); setTick((t) => t + 1);
               }
             }}>
