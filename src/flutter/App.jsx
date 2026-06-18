@@ -1,50 +1,357 @@
 import React, { useState, useEffect } from "react";
 import {
     Smartphone, BookOpen, Terminal, Lightbulb, Check, ChevronLeft, ChevronRight,
-    Eye, EyeOff, Award, Star, Zap, AlertTriangle, Layers, GitBranch, Repeat,
-    Hash, Shield, Radio, Box, Code, RotateCcw, Play, Workflow,
+    Eye, EyeOff, Award, Zap, Layers, GitBranch,
+    Hash, Shield, Radio, Box, Code, RotateCcw, Play, Workflow, RefreshCw,
+    LayoutGrid, FormInput, Pause,
 } from "lucide-react";
 
 /* ============================================================
-   FLUTTER + DART — De cero a app móvil
+   FLUTTER + DART — Examen edition
    Curso autónomo. Progreso en localStorage (flutter_progress_v1).
-   40% teoría / 60% práctica. Pensado para principiantes totales.
-   Basado en: alilopez37.github.io/dart  y  /provider
+   Enfocado en los temas de evaluación + animaciones explicativas
+   integradas en cada lección.
    ── En el código Dart, \${...} es interpolación (se ve como ${...}).
    ============================================================ */
 
 const SAVE_KEY = "flutter_progress_v1";
 
+/* ====================================================================
+   COMPONENTES DE ANIMACIÓN — cada uno es autocontenido, usa CSS/SVG,
+   no requiere librerías externas. Se usan dentro de los bloques de
+   teoría con { anim: "nombre" }.
+   ==================================================================== */
+
+/* --- 1. Árbol de Widgets: muestra cómo un widget contiene a otros --- */
+function AnimWidgetTree() {
+    const [step, setStep] = useState(0);
+    const nodes = [
+        { id: 0, label: "MaterialApp", x: 200, y: 20 },
+        { id: 1, label: "Scaffold", x: 200, y: 80 },
+        { id: 2, label: "AppBar", x: 90, y: 140 },
+        { id: 3, label: "Column", x: 310, y: 140 },
+        { id: 4, label: "Text", x: 240, y: 200 },
+        { id: 5, label: "Button", x: 380, y: 200 },
+    ];
+    const edges = [[0,1],[1,2],[1,3],[3,4],[3,5]];
+    useEffect(() => {
+        const t = setInterval(() => setStep((s) => (s + 1) % (nodes.length + 1)), 700);
+        return () => clearInterval(t);
+    }, []);
+    return (
+        <div className="fl-anim">
+            <svg viewBox="0 0 480 240" className="fl-anim-svg">
+                {edges.map(([a, b], i) => {
+                    const A = nodes[a], B = nodes[b];
+                    const litA = step > a, litB = step > b;
+                    return (
+                        <line key={i} x1={A.x} y1={A.y + 12} x2={B.x} y2={B.y - 12}
+                              stroke={litA && litB ? "#42A5F5" : "#1e2a38"} strokeWidth="2"
+                              style={{ transition: "stroke .3s" }} />
+                    );
+                })}
+                {nodes.map((n) => {
+                    const lit = step > n.id;
+                    return (
+                        <g key={n.id} style={{ transition: "all .35s" }}>
+                            <rect x={n.x - 48} y={n.y - 14} width="96" height="28" rx="8"
+                                  fill={lit ? "rgba(66,165,245,.18)" : "#0f1620"}
+                                  stroke={lit ? "#42A5F5" : "#1e2a38"} strokeWidth="1.5"
+                                  style={{ transition: "all .35s" }} />
+                            <text x={n.x} y={n.y + 4} textAnchor="middle"
+                                  fill={lit ? "#aee0ff" : "#5d708a"} fontSize="11" fontFamily="JetBrains Mono, monospace"
+                                  style={{ transition: "fill .35s" }}>{n.label}</text>
+                        </g>
+                    );
+                })}
+            </svg>
+            <p className="fl-anim-cap">Cada widget es una caja que contiene a otras cajas. Así se construye TODA la pantalla: un árbol de widgets anidados.</p>
+        </div>
+    );
+}
+
+/* --- 2. Stateless vs Stateful: comparación de rebuild --- */
+function AnimStatelessVsStateful() {
+    const [tick, setTick] = useState(0);
+    const [running, setRunning] = useState(true);
+    useEffect(() => {
+        if (!running) return;
+        const t = setInterval(() => setTick((s) => s + 1), 1100);
+        return () => clearInterval(t);
+    }, [running]);
+    const pulseKey = tick;
+    return (
+        <div className="fl-anim">
+            <div className="fl-svs-row">
+                <div className="fl-svs-col">
+                    <div className="fl-svs-tag">StatelessWidget</div>
+                    <div className="fl-svs-box static">
+                        <Box size={26} />
+                        <span>Texto fijo: "Hola"</span>
+                    </div>
+                    <div className="fl-svs-note">No cambia. Se construye una vez y ya.</div>
+                </div>
+                <div className="fl-svs-col">
+                    <div className="fl-svs-tag">StatefulWidget</div>
+                    <div key={pulseKey} className="fl-svs-box dynamic">
+                        <RefreshCw size={26} className="fl-spin-once" />
+                        <span>Contador: {tick}</span>
+                    </div>
+                    <div className="fl-svs-note">Se redibuja cada vez que su estado cambia (setState).</div>
+                </div>
+            </div>
+            <button className="fl-anim-btn" onClick={() => setRunning((r) => !r)}>
+                {running ? <Pause size={13} /> : <Play size={13} />} {running ? "Pausar" : "Reanudar"}
+            </button>
+        </div>
+    );
+}
+
+/* --- 3. Ciclo de vida de StatefulWidget --- */
+function AnimLifecycle() {
+    const stages = ["createState()", "initState()", "build()", "setState() → build()", "dispose()"];
+    const [i, setI] = useState(0);
+    useEffect(() => {
+        const t = setInterval(() => setI((v) => (v + 1) % stages.length), 1000);
+        return () => clearInterval(t);
+    }, []);
+    return (
+        <div className="fl-anim">
+            <div className="fl-life-track">
+                {stages.map((s, idx) => (
+                    <React.Fragment key={s}>
+                        <div className={`fl-life-node ${idx === i ? "active" : ""} ${idx < i ? "past" : ""}`}>
+                            <span className="fl-life-dot" />
+                            <span className="fl-life-label">{s}</span>
+                        </div>
+                        {idx < stages.length - 1 && <div className={`fl-life-line ${idx < i ? "past" : ""}`} />}
+                    </React.Fragment>
+                ))}
+            </div>
+            <p className="fl-anim-cap">
+                {i === 0 && "Flutter crea el objeto State (la memoria del widget)."}
+                {i === 1 && "initState() corre UNA vez: ideal para inicializar datos."}
+                {i === 2 && "build() dibuja la UI por primera vez."}
+                {i === 3 && "Cada setState() vuelve a llamar build() — así se actualiza la pantalla."}
+                {i === 4 && "dispose() limpia todo cuando el widget se destruye (sale de pantalla)."}
+            </p>
+        </div>
+    );
+}
+
+/* --- 4. Layout: Row / Column / Stack / Expanded en vivo --- */
+function AnimLayout() {
+    const [mode, setMode] = useState("row");
+    const modes = ["row", "column", "stack", "expanded"];
+    const boxes = ["#42A5F5", "#5cc88a", "#ffbd2e"];
+    return (
+        <div className="fl-anim">
+            <div className="fl-layout-tabs">
+                {modes.map((m) => (
+                    <button key={m} className={`fl-layout-tab ${mode === m ? "on" : ""}`} onClick={() => setMode(m)}>{m}</button>
+                ))}
+            </div>
+            <div className="fl-layout-stage">
+                {mode === "row" && (
+                    <div className="fl-row-demo">
+                        {boxes.map((c, i) => <div key={i} className="fl-demo-box" style={{ background: c }}>{i + 1}</div>)}
+                    </div>
+                )}
+                {mode === "column" && (
+                    <div className="fl-col-demo">
+                        {boxes.map((c, i) => <div key={i} className="fl-demo-box" style={{ background: c }}>{i + 1}</div>)}
+                    </div>
+                )}
+                {mode === "stack" && (
+                    <div className="fl-stack-demo">
+                        {boxes.map((c, i) => (
+                            <div key={i} className="fl-demo-box stacked" style={{ background: c, top: i * 14, left: i * 14, opacity: 1 - i * 0.12, zIndex: 3 - i }}>{i + 1}</div>
+                        ))}
+                    </div>
+                )}
+                {mode === "expanded" && (
+                    <div className="fl-row-demo">
+                        <div className="fl-demo-box" style={{ background: boxes[0], flex: "none", width: 50 }}>fijo</div>
+                        <div className="fl-demo-box expanded-flex" style={{ background: boxes[1] }}>Expanded</div>
+                        <div className="fl-demo-box" style={{ background: boxes[2], flex: "none", width: 50 }}>fijo</div>
+                    </div>
+                )}
+            </div>
+            <p className="fl-anim-cap">
+                {mode === "row" && "Row pone a sus hijos en fila, uno junto al otro (horizontal)."}
+                {mode === "column" && "Column pone a sus hijos uno debajo del otro (vertical)."}
+                {mode === "stack" && "Stack los apila, uno ENCIMA del otro (como capas de Photoshop)."}
+                {mode === "expanded" && "Expanded hace que un hijo de Row/Column estire para llenar el espacio sobrante."}
+            </p>
+        </div>
+    );
+}
+
+/* --- 5. Flujo de estado: Evento → setState/notify → rebuild → UI --- */
+function AnimStateFlow() {
+    const [active, setActive] = useState(0);
+    const steps = ["Usuario toca el botón", "setState() / notifyListeners()", "Flutter reconstruye (build)", "La UI se actualiza"];
+    useEffect(() => {
+        const t = setInterval(() => setActive((a) => (a + 1) % steps.length), 1000);
+        return () => clearInterval(t);
+    }, []);
+    return (
+        <div className="fl-anim">
+            <div className="fl-flow">
+                {steps.map((s, i) => (
+                    <React.Fragment key={i}>
+                        <div className={`fl-flow-node ${active === i ? "active" : ""}`}>{s}</div>
+                        {i < steps.length - 1 && <div className="fl-flow-arrow">→</div>}
+                    </React.Fragment>
+                ))}
+            </div>
+            <p className="fl-anim-cap">Este ciclo se repite cada vez que algo cambia. Sin notificar el cambio (setState/notifyListeners), la UI se queda congelada con datos viejos.</p>
+        </div>
+    );
+}
+
+/* --- 6. Null Safety: caja vacía vs llena --- */
+function AnimNullSafety() {
+    const [val, setVal] = useState(null);
+    const toggle = () => setVal((v) => (v ? null : "Hola"));
+    return (
+        <div className="fl-anim">
+            <div className="fl-null-row">
+                <div className={`fl-null-box ${val ? "filled" : "empty"}`}>
+                    <span className="fl-null-label">String?</span>
+                    <span className="fl-null-val">{val ?? "null"}</span>
+                </div>
+                <button className="fl-anim-btn" onClick={toggle}>
+                    {val ? "Vaciar" : "Asignar valor"}
+                </button>
+            </div>
+            <div className="fl-null-result">
+                <span>nombre ?? 'Anónimo' → </span>
+                <strong style={{ color: val ? "#5cc88a" : "#ffbd2e" }}>{val ?? "Anónimo"}</strong>
+            </div>
+            <p className="fl-anim-cap">Cuando la caja está vacía (null), el operador <code>??</code> entrega un valor de respaldo en su lugar, evitando que la app truene.</p>
+        </div>
+    );
+}
+
+/* --- 7. Formulario con validación en vivo --- */
+function AnimFormValidation() {
+    const [email, setEmail] = useState("");
+    const valid = /\S+@\S+\.\S+/.test(email);
+    const touched = email.length > 0;
+    return (
+        <div className="fl-anim">
+            <div className="fl-form-demo">
+                <label className="fl-form-label">Correo electrónico</label>
+                <input
+                    className={`fl-form-input ${touched ? (valid ? "ok" : "bad") : ""}`}
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                {touched && (
+                    <div className={`fl-form-msg ${valid ? "ok" : "bad"}`}>
+                        {valid ? "✓ Correo válido" : "✗ Falta un formato válido (algo@algo.com)"}
+                    </div>
+                )}
+            </div>
+            <p className="fl-anim-cap">Escribe arriba: así se ve un validator() en vivo. TextFormField revisa el patrón y muestra el error ANTES de enviar el formulario.</p>
+        </div>
+    );
+}
+
+/* --- 8. Gestores de estado: comparación visual de "quién mueve el dato" --- */
+function AnimStateManagers() {
+    const opts = [
+        { name: "setState", desc: "El widget se actualiza A SÍ MISMO. Simple, pero solo sirve localmente.", color: "#8a98a8" },
+        { name: "Provider", desc: "Un ChangeNotifier centraliza el dato; las pantallas lo escuchan (watch/read).", color: "#42A5F5" },
+        { name: "Riverpod", desc: "Como Provider, pero sin BuildContext y con más seguridad en compilación.", color: "#5cc88a" },
+        { name: "Bloc", desc: "Eventos entran → Bloc procesa → emite nuevos Estados. Muy estructurado.", color: "#ffbd2e" },
+        { name: "GetX", desc: "Variables 'reactivas' (.obs) que actualizan la UI solas al cambiar.", color: "#ff7b72" },
+    ];
+    const [sel, setSel] = useState(1);
+    return (
+        <div className="fl-anim">
+            <div className="fl-mgr-tabs">
+                {opts.map((o, i) => (
+                    <button key={o.name} className={`fl-mgr-tab ${sel === i ? "on" : ""}`}
+                            style={sel === i ? { borderColor: o.color, color: o.color } : {}}
+                            onClick={() => setSel(i)}>{o.name}</button>
+                ))}
+            </div>
+            <div className="fl-mgr-stage">
+                <div className="fl-mgr-flow">
+                    <div className="fl-mgr-box" style={{ borderColor: opts[sel].color }}>UI</div>
+                    <div className="fl-mgr-arrow" style={{ color: opts[sel].color }}>⇄</div>
+                    <div className="fl-mgr-box" style={{ borderColor: opts[sel].color, background: `${opts[sel].color}22` }}>{opts[sel].name}</div>
+                </div>
+                <p className="fl-anim-cap">{opts[sel].desc}</p>
+            </div>
+        </div>
+    );
+}
+
+/* --- 9. setState en acción: contador con caja que "tiembla" al actualizar --- */
+function AnimSetStateCounter() {
+    const [n, setN] = useState(0);
+    const [pulse, setPulse] = useState(false);
+    const bump = () => {
+        setN((x) => x + 1);
+        setPulse(true);
+        setTimeout(() => setPulse(false), 280);
+    };
+    return (
+        <div className="fl-anim">
+            <div className="fl-counter-row">
+                <div className={`fl-counter-box ${pulse ? "pulse" : ""}`}>{n}</div>
+                <button className="fl-anim-btn" onClick={bump}><Zap size={13} /> setState(() =&gt; n++)</button>
+            </div>
+            <p className="fl-anim-cap">Cada clic llama setState(): Flutter marca el widget como "sucio" y vuelve a correr build() con el nuevo valor.</p>
+        </div>
+    );
+}
+
+/* --- 10. App completa: navegación entre pantallas (organización) --- */
+function AnimAppFlow() {
+    const screens = ["Login", "Home", "Detalle", "Perfil"];
+    const [cur, setCur] = useState(0);
+    return (
+        <div className="fl-anim">
+            <div className="fl-app-row">
+                {screens.map((s, i) => (
+                    <React.Fragment key={s}>
+                        <button className={`fl-app-screen ${cur === i ? "on" : ""}`} onClick={() => setCur(i)}>
+                            <Smartphone size={16} />{s}
+                        </button>
+                        {i < screens.length - 1 && <span className="fl-app-arrow">→</span>}
+                    </React.Fragment>
+                ))}
+            </div>
+            <p className="fl-anim-cap">Cada pantalla es una Route. Navigator.push() avanza, Navigator.pop() regresa. Los datos (usuario, carrito) viven en un gestor de estado compartido entre todas.</p>
+        </div>
+    );
+}
 const L = [
-    /* ===================== MÓDULO DART ===================== */
+    /* ===================== MÓDULO DART (base esencial) ===================== */
     {
-        id: "d_intro", mod: "Dart", icon: Terminal, mins: "20 min",
+        id: "d_intro", mod: "Dart", icon: Terminal, mins: "15 min",
         title: "Tu primer programa en Dart",
-        intro: "Dart es el idioma que habla Flutter. Antes de hacer apps bonitas, hay que aprender a 'hablar' con la máquina. Empecemos por lo más básico.",
+        intro: "Dart es el idioma que habla Flutter. Antes de hacer apps bonitas, hay que aprender a 'hablar' con la máquina.",
         theory: [
-            { p: "Todo programa de Dart necesita un punto de partida llamado main(). Es como la puerta de entrada de una casa: cuando ejecutas el programa, la computadora entra por ahí." },
+            { p: "Todo programa de Dart necesita un punto de partida llamado main(). Es como la puerta de entrada de una casa." },
             { code: { file: "hola.dart", code: `void main() {
   print('Hola, Flutter!');
 }` } },
             { list: [
                     "void main() → la función donde arranca TODO. Siempre va.",
                     "{ } → las llaves encierran el bloque de código que se ejecuta.",
-                    "print(...) → muestra algo en la consola (la pantalla de texto).",
-                    "; → cada instrucción termina con punto y coma. Como el punto final de una oración.",
+                    "print(...) → muestra algo en la consola.",
+                    "; → cada instrucción termina con punto y coma.",
                 ] },
-            { h: "Comentarios (notas para ti, que la máquina ignora)" },
-            { code: { file: "comentarios.dart", code: `// Comentario de una línea
-
-/* Comentario
-   de varias líneas */
-
-/// Documentación (para explicar funciones)` } },
-            { tip: { icon: "💡", text: "Practica en dartpad.dev — es una página web donde escribes Dart y lo corres al instante, sin instalar nada." } },
+            { tip: { icon: "💡", text: "Practica en dartpad.dev — escribes Dart y lo corres al instante, sin instalar nada." } },
         ],
         practice: [
-            {
-                title: "Tu propio Hola Mundo",
-                goal: "Modifica el mensaje para que salude con TU nombre.",
+            { title: "Tu propio Hola Mundo", goal: "Modifica el mensaje para que salude con TU nombre.",
                 steps: ["Crea void main()", "Dentro, usa print() con tu nombre"],
                 solution: `void main() {
   print('Hola, soy Gael y estoy aprendiendo Dart!');
@@ -52,13 +359,13 @@ const L = [
         ],
         quiz: [
             { q: "¿Qué función es el punto de entrada obligatorio de todo programa Dart?", opts: ["start()", "main()", "init()", "run()"], correct: 1, fb: "main() es por donde la computadora empieza a ejecutar tu programa." },
-            { q: "¿Con qué símbolo termina cada instrucción en Dart?", opts: ["Una coma ,", "Dos puntos :", "Punto y coma ;", "Nada"], correct: 2, fb: "El punto y coma ; cierra cada instrucción, como el punto final de una frase." },
+            { q: "¿Con qué símbolo termina cada instrucción en Dart?", opts: ["Una coma ,", "Dos puntos :", "Punto y coma ;", "Nada"], correct: 2, fb: "El punto y coma ; cierra cada instrucción." },
         ],
     },
     {
         id: "d_vars", mod: "Dart", icon: Hash, mins: "25 min",
-        title: "Variables y tipos de datos",
-        intro: "Una variable es una cajita con nombre donde guardas un dato. El 'tipo' es qué clase de dato cabe en esa cajita: un número, un texto, etc.",
+        title: "Variables, tipos de datos y seguridad de tipos",
+        intro: "Una variable es una cajita con nombre donde guardas un dato. El 'tipo' es qué clase de dato cabe en esa cajita. Dart es 'fuertemente tipado': no puedes meter un texto donde se espera un número sin convertirlo, y eso evita muchísimos errores.",
         theory: [
             { code: { file: "variables.dart", code: `// Tipo explícito (tú dices qué guarda)
 int edad = 20;          // número entero
@@ -78,68 +385,45 @@ const pi = 3.14159;` } },
                         ["int", "42", "Números enteros"],
                         ["double", "3.14", "Números con decimales"],
                         ["String", "'hola'", "Texto"],
-                        ["bool", "true / false", "Sí o no, prendido o apagado"],
+                        ["bool", "true / false", "Sí o no"],
                         ["List", "[1, 2, 3]", "Una lista de cosas"],
                         ["Map", "{'k': v}", "Pares clave→valor"],
                     ] } },
-            { h: "var vs final vs const (la duda eterna)" },
+            { h: "Seguridad de tipos (type safety)" },
+            { p: "Como Dart conoce el tipo de cada variable desde que la escribes, el compilador te avisa de errores ANTES de correr la app. Si int edad = 'veinte'; eso ni siquiera compila: te ahorra un bug en producción." },
+            { h: "var vs final vs const" },
             { tip: { icon: "🔑", text: "var puede cambiar después · final se asigna UNA vez y ya · const es un valor fijo conocido desde el inicio (como pi)." } },
             { code: { file: "interpolacion.dart", code: `var nombre = 'Carlos';
 var edad = 22;
-
-// Meter variables dentro de un texto con $
 print('Soy $nombre');
-// Meter una operación con \${ }
 print('En 10 años tendré \${edad + 10}');` } },
         ],
         practice: [
-            {
-                title: "Perfil de usuario",
-                goal: "Declara tus datos con tipos explícitos e imprime un resumen.",
-                steps: [
-                    "Declara nombre (String), edad (int), altura (double), esEstudiante (bool)",
-                    "Usa var para la ciudad",
-                    "Imprime todo con interpolación ($variable)",
-                ],
+            { title: "Perfil de usuario", goal: "Declara tus datos con tipos explícitos e imprime un resumen.",
+                steps: ["Declara nombre (String), edad (int), altura (double), esEstudiante (bool)", "Usa var para la ciudad", "Imprime todo con interpolación ($variable)"],
                 solution: `void main() {
   String nombre = 'Gael';
   int edad = 22;
   double altura = 1.75;
   bool esEstudiante = true;
   var ciudad = 'Tuxtla';
-
   print('$nombre, $edad años, mide $altura m.');
   print('Ciudad: $ciudad. ¿Estudiante? $esEstudiante');
 }` },
-            {
-                title: "Calculadora básica",
-                goal: "Practica los operadores con dos números.",
-                steps: [
-                    "Define double a = 17.5 y double b = 4.0",
-                    "Imprime suma, resta, multiplicación, división, módulo (%) y división entera (~/)",
-                ],
-                solution: `void main() {
-  double a = 17.5;
-  double b = 4.0;
-  print('Suma: \${a + b}');
-  print('Resta: \${a - b}');
-  print('Multiplicación: \${a * b}');
-  print('División: \${a / b}');
-  print('Módulo: \${a % b}');
-  print('División entera: \${a ~/ b}');
-}` },
         ],
         quiz: [
-            { q: "¿Qué tipo usarías para guardar un precio como 9.99?", opts: ["int", "double", "String", "bool"], correct: 1, fb: "double guarda números con decimales. int solo guarda enteros." },
+            { q: "¿Qué tipo usarías para guardar un precio como 9.99?", opts: ["int", "double", "String", "bool"], correct: 1, fb: "double guarda números con decimales." },
             { q: "¿Cuál puede cambiar de valor después de crearse?", opts: ["const", "final", "var", "Ninguna"], correct: 2, fb: "var puede reasignarse; final y const no." },
+            { q: "¿Qué ventaja da la seguridad de tipos (type safety) de Dart?", opts: ["Hace la app más bonita", "Detecta errores de tipo ANTES de ejecutar, en tiempo de compilación", "Borra variables automáticamente", "No tiene ninguna ventaja"], correct: 1, fb: "El compilador atrapa errores de tipo antes de que la app corra." },
         ],
     },
     {
-        id: "d_null", mod: "Dart", icon: Shield, mins: "20 min",
-        title: "Null Safety (adiós a los crashes)",
-        intro: "null significa 'vacío, sin valor'. El error más famoso de la programación es usar algo que está vacío y que la app truene. Dart te protege de eso ANTES de que pase.",
+        id: "d_null", mod: "Dart", icon: Shield, mins: "30 min",
+        title: "Null Safety: ?, ??, late y prevención de errores",
+        intro: "null significa 'vacío, sin valor'. El error más famoso de la programación es usar algo vacío y que la app truene. Dart te protege de eso DESDE el compilador, antes de que la app corra.",
         theory: [
-            { p: "Null Safety es un sistema que garantiza que una variable normal nunca esté vacía. Si una variable PUEDE estar vacía, tienes que avisarle a Dart poniendo un ? después del tipo." },
+            { anim: "nullsafety" },
+            { p: "Por default, en Dart una variable NUNCA puede ser null. Si quieres permitirlo, tienes que avisarle a Dart agregando un ? después del tipo: ahí declaras una variable 'nullable'." },
             { code: { file: "null.dart", code: `// Normal: NUNCA puede ser null
 String nombre = 'Ana';
 
@@ -161,17 +445,20 @@ var largo2 = nombre!.length;
 String? ciudad;
 ciudad ??= 'Tuxtla';  // se pone Tuxtla
 ciudad ??= 'CDMX';    // NO cambia, ya tenía valor` } },
-            { tip: { icon: "🔑", text: "El ! es el más peligroso: le dices a Dart 'seguro que tiene valor'. Si te equivocas, truena. Úsalo solo cuando estés 100% seguro." } },
+            { h: "late: 'prometo que le pongo valor antes de usarla'" },
+            { p: "A veces sabes que una variable NO será null cuando la uses, pero no puedes darle valor justo al declararla (ej. depende de initState() en Flutter). Ahí usas late: le dices a Dart 'confía, llegará el valor antes de que la lea'." },
+            { code: { file: "late.dart", code: `class Pantalla {
+  late String titulo; // se asignará después, no al declarar
+
+  void iniciar() {
+    titulo = 'Bienvenido'; // aquí SÍ se le da valor
+  }
+}` } },
+            { tip: { icon: "⚠️", text: "Si usas late y lees la variable ANTES de asignarle algo, la app truena en tiempo de ejecución. El ! es igual de peligroso: úsalo solo si estás 100% seguro." } },
         ],
         practice: [
-            {
-                title: "Null Safety en práctica",
-                goal: "Juega con una variable que puede estar vacía.",
-                steps: [
-                    "Declara String? apodo sin valor",
-                    "Usa ??= para ponerle 'Sin apodo' si está vacío",
-                    "Imprime su longitud de forma segura con ?.",
-                ],
+            { title: "Null Safety en práctica", goal: "Juega con una variable que puede estar vacía.",
+                steps: ["Declara String? apodo sin valor", "Usa ??= para ponerle 'Sin apodo' si está vacío", "Imprime su longitud de forma segura con ?."],
                 solution: `void main() {
   String? apodo;
   apodo ??= 'Sin apodo';
@@ -181,13 +468,14 @@ ciudad ??= 'CDMX';    // NO cambia, ya tenía valor` } },
         ],
         quiz: [
             { q: "¿Qué hace el operador ?? en  'var x = a ?? b'?", opts: ["Suma a y b", "Usa b si a está vacío (null)", "Compara a con b", "Borra a"], correct: 1, fb: "?? da un valor de respaldo cuando el primero es null." },
-            { q: "¿Qué significa el ? en  String? nombre;", opts: ["Que es una pregunta", "Que la variable PUEDE ser null", "Que es secreta", "Que es constante"], correct: 1, fb: "El ? marca la variable como nullable: tiene permiso de estar vacía." },
+            { q: "¿Qué significa el ? en  String? nombre;", opts: ["Que es una pregunta", "Que la variable PUEDE ser null", "Que es secreta", "Que es constante"], correct: 1, fb: "El ? marca la variable como nullable." },
+            { q: "¿Para qué sirve la palabra late?", opts: ["Para borrar una variable", "Para prometer que se le asignará valor antes de usarla, aunque no al declararla", "Para hacerla constante", "Para volverla privada"], correct: 1, fb: "late retrasa la inicialización, pero exige que tenga valor antes del primer uso." },
         ],
     },
     {
-        id: "d_flow", mod: "Dart", icon: GitBranch, mins: "25 min",
+        id: "d_flow", mod: "Dart", icon: GitBranch, mins: "20 min",
         title: "Decisiones y bucles",
-        intro: "Hasta ahora el código corre de arriba a abajo. Ahora le enseñamos a TOMAR DECISIONES (if) y a REPETIR cosas (bucles).",
+        intro: "El código corre de arriba a abajo. Ahora le enseñamos a TOMAR DECISIONES (if) y a REPETIR cosas (bucles).",
         theory: [
             { h: "Decisiones: if / else" },
             { code: { file: "decisiones.dart", code: `if (nota >= 90) {
@@ -198,47 +486,19 @@ ciudad ??= 'CDMX';    // NO cambia, ya tenía valor` } },
   print('Reprobado');
 }
 
-// Ternario: un if corto en una línea
 var estado = nota >= 70 ? 'Aprobado' : 'Reprobado';` } },
-            { h: "switch: cuando hay muchas opciones" },
-            { code: { file: "switch.dart", code: `switch (dia) {
-  case 'lunes':
-    print('Inicio de semana');
-    break;
-  default:
-    print('Otro día');
-}` } },
             { h: "Bucles: repetir sin copiar y pegar" },
-            { code: { file: "bucles.dart", code: `// for clásico: repite contando
-for (var i = 0; i < 5; i++) {
+            { code: { file: "bucles.dart", code: `for (var i = 0; i < 5; i++) {
   print(i); // 0,1,2,3,4
 }
 
-// for-in: recorre una lista
 var frutas = ['manzana', 'pera'];
 for (var f in frutas) {
   print(f);
-}
-
-// while: repite mientras se cumpla algo
-var n = 0;
-while (n < 3) {
-  print(n);
-  n++;
-}
-
-// do..while: igual, pero corre AL MENOS una vez
-var i = 0;
-do {
-  print('Intento $i');
-  i++;
-} while (i < 3);` } },
-            { tip: { icon: "⚡", text: "break sale del bucle de golpe. continue se salta a la siguiente vuelta." } },
+}` } },
         ],
         practice: [
-            {
-                title: "Tabla de multiplicar",
-                goal: "Imprime la tabla del 7 con un bucle for.",
+            { title: "Tabla de multiplicar", goal: "Imprime la tabla del 7 con un bucle for.",
                 steps: ["Define int tabla = 7", "Con un for del 1 al 12, imprime cada producto"],
                 solution: `void main() {
   int tabla = 7;
@@ -246,64 +506,31 @@ do {
     print('$tabla x $i = \${tabla * i}');
   }
 }` },
-            {
-                title: "Clasificador de notas",
-                goal: "Recorre una lista de notas y di si cada una aprueba.",
-                steps: ["Lista: [95, 82, 71, 60, 45]", "Con for-in, imprime aprobado/reprobado (>=70)"],
-                solution: `void main() {
-  var notas = [95, 82, 71, 60, 45];
-  for (var nota in notas) {
-    var estado = nota >= 70 ? 'Aprobado' : 'Reprobado';
-    print('$nota → $estado');
-  }
-}` },
         ],
         quiz: [
-            { q: "¿Qué bucle se ejecuta AL MENOS una vez aunque la condición sea falsa?", opts: ["for", "while", "do..while", "for-in"], correct: 2, fb: "do..while revisa la condición al final, así que siempre corre una vez." },
             { q: "El ternario  'a >= 70 ? \"sí\" : \"no\"'  es una forma corta de...", opts: ["un bucle", "un if/else", "una función", "un switch"], correct: 1, fb: "El ternario es un if/else comprimido en una sola línea." },
         ],
     },
     {
-        id: "d_func", mod: "Dart", icon: Code, mins: "25 min",
+        id: "d_func", mod: "Dart", icon: Code, mins: "20 min",
         title: "Funciones",
-        intro: "Una función es una 'receta' con nombre: un bloque de código que haces una vez y reutilizas cuantas veces quieras. Evita copiar y pegar.",
+        intro: "Una función es una 'receta' con nombre: un bloque de código que haces una vez y reutilizas cuantas veces quieras.",
         theory: [
-            { code: { file: "funciones.dart", code: `// Función que recibe 2 números y devuelve su suma
-int sumar(int a, int b) {
+            { code: { file: "funciones.dart", code: `int sumar(int a, int b) {
   return a + b;
 }
 
-// Arrow function: si es una sola línea, más corta
-int multiplicar(int a, int b) => a * b;
-
-// Parámetros nombrados (van entre llaves { })
-void saludar(String nombre, {String titulo = 'Sr.'}) {
-  print('Hola $titulo $nombre');
-}
-
-saludar('García', titulo: 'Dr.'); // Hola Dr. García` } },
-            { p: "int sumar(...) significa: la función se llama sumar, recibe dos int, y devuelve (return) un int. El tipo de antes es lo que ENTREGA." },
-            { h: "Funciones anónimas (lambdas) y métodos de lista" },
+// Arrow function: si es una sola línea
+int multiplicar(int a, int b) => a * b;` } },
+            { p: "int sumar(...) significa: la función se llama sumar, recibe dos int, y devuelve (return) un int." },
+            { h: "Funciones anónimas y métodos de lista" },
             { code: { file: "lambdas.dart", code: `var numeros = [1, 2, 3, 4, 5];
-
-// where: filtra. Quédate solo con los pares
 var pares = numeros.where((n) => n % 2 == 0);
-print(pares); // (2, 4)
-
-// map: transforma. Eleva cada uno al cuadrado
-var cuadrados = numeros.map((n) => n * n).toList();
-print(cuadrados); // [1, 4, 9, 16, 25]` } },
-            { tip: { icon: "💡", text: "(n) => n * 2 es una función sin nombre. Se la pasas a where/map para decirles QUÉ hacer con cada elemento." } },
+var cuadrados = numeros.map((n) => n * n).toList();` } },
         ],
         practice: [
-            {
-                title: "FizzBuzz con funciones",
-                goal: "El clásico ejercicio, encapsulado en una función.",
-                steps: [
-                    "Crea función String fizzBuzz(int n)",
-                    "Devuelve 'FizzBuzz' si es múltiplo de 3 y 5, 'Fizz' si de 3, 'Buzz' si de 5, o el número",
-                    "Recórrela del 1 al 15",
-                ],
+            { title: "FizzBuzz con funciones", goal: "El clásico ejercicio, encapsulado en una función.",
+                steps: ["Crea función String fizzBuzz(int n)", "Múltiplo de 3 y 5 → 'FizzBuzz', de 3 → 'Fizz', de 5 → 'Buzz', si no, el número"],
                 solution: `String fizzBuzz(int n) {
   if (n % 3 == 0 && n % 5 == 0) return 'FizzBuzz';
   if (n % 3 == 0) return 'Fizz';
@@ -316,124 +543,76 @@ void main() {
     print(fizzBuzz(i));
   }
 }` },
-            {
-                title: "Filtrar y transformar",
-                goal: "Usa where y map juntos.",
-                steps: ["Lista de 6 números", "Filtra los pares con where", "Elévalos al cuadrado con map", "Imprime con toList()"],
-                solution: `void main() {
-  var nums = [1, 2, 3, 4, 5, 6];
-  var resultado = nums
-      .where((n) => n % 2 == 0)
-      .map((n) => n * n)
-      .toList();
-  print(resultado); // [4, 16, 36]
-}` },
         ],
         quiz: [
             { q: "En  'int sumar(int a, int b)', ¿qué significa el primer int?", opts: ["Que recibe un texto", "El tipo de dato que la función DEVUELVE", "Que es privada", "Nada"], correct: 1, fb: "El tipo antes del nombre es lo que la función entrega con return." },
-            { q: "¿Qué hace  numeros.where((n) => n > 3)?", opts: ["Suma los mayores a 3", "Se queda solo con los elementos mayores a 3", "Borra el 3", "Ordena la lista"], correct: 1, fb: "where filtra: conserva los elementos que cumplen la condición." },
         ],
     },
     {
         id: "d_coll", mod: "Dart", icon: Layers, mins: "20 min",
         title: "Colecciones: List, Set y Map",
-        intro: "Una variable guarda un dato. Las colecciones guardan MUCHOS datos juntos. Son las tres estructuras que más usarás.",
+        intro: "Una variable guarda un dato. Las colecciones guardan MUCHOS datos juntos.",
         theory: [
             { h: "List — una lista ordenada (permite repetidos)" },
             { code: { file: "list.dart", code: `List<int> nums = [1, 2, 3];
-nums.add(4);        // agregar
-print(nums.length); // cuántos hay → 4
-print(nums[0]);     // el primero → 1` } },
-            { h: "Set — como una lista, pero SIN repetidos" },
-            { code: { file: "set.dart", code: `Set<String> colores = {'rojo', 'azul'};
-colores.add('rojo'); // se ignora, ya existe
-print(colores); // {rojo, azul}` } },
+nums.add(4);
+print(nums.length); // 4
+print(nums[0]);     // 1` } },
             { h: "Map — pares clave → valor (como un diccionario)" },
             { code: { file: "map.dart", code: `Map<String, dynamic> alumno = {
   'nombre': 'Laura',
   'edad': 20,
-  'promedio': 9.2,
 };
 
 print(alumno['nombre']); // Laura
-alumno['semestre'] = 3;  // agregar par
-
-// Recorrer todos los pares
-alumno.forEach((clave, valor) => print('$clave: $valor'));` } },
-            { tip: { icon: "✓", text: "List = fila ordenada. Set = bolsa sin duplicados. Map = etiquetas con su valor. El Map es clave para leer datos de internet (JSON)." } },
+alumno['semestre'] = 3;
+alumno.forEach((k, v) => print('$k: $v'));` } },
+            { tip: { icon: "✓", text: "List = fila ordenada. Set = bolsa sin duplicados. Map = etiquetas con su valor. El Map es clave para leer JSON." } },
         ],
         practice: [
-            {
-                title: "Agenda de contactos",
-                goal: "Guarda y consulta contactos con un Map.",
+            { title: "Agenda de contactos", goal: "Guarda y consulta contactos con un Map.",
                 steps: ["Crea Map<String, String> con 3 nombre→teléfono", "Recórrelo con forEach", "Busca un contacto e imprime su teléfono"],
                 solution: `void main() {
   Map<String, String> agenda = {
     'Ana': '555-1111',
     'Luis': '555-2222',
-    'Sara': '555-3333',
   };
-
   agenda.forEach((nombre, tel) => print('$nombre: $tel'));
-
-  var buscar = 'Luis';
-  print('Tel de $buscar: \${agenda[buscar] ?? "No encontrado"}');
+  print('Tel de Luis: \${agenda['Luis'] ?? "No encontrado"}');
 }` },
         ],
         quiz: [
-            { q: "¿Qué colección NO permite elementos repetidos?", opts: ["List", "Set", "Map", "Todas"], correct: 1, fb: "Set descarta duplicados automáticamente." },
             { q: "Para guardar pares como 'nombre': 'Laura', usas un...", opts: ["List", "Set", "Map", "int"], correct: 2, fb: "Map guarda parejas clave→valor." },
         ],
     },
     {
-        id: "d_oop", mod: "Dart", icon: Box, mins: "30 min",
-        title: "Clases y objetos (Programación Orientada a Objetos)",
-        intro: "Una clase es un MOLDE. Un objeto es algo hecho con ese molde. Ejemplo: 'Persona' es el molde; tú y yo somos objetos Persona, cada uno con sus propios datos.",
+        id: "d_oop", mod: "Dart", icon: Box, mins: "25 min",
+        title: "Clases y objetos (POO)",
+        intro: "Una clase es un MOLDE. Un objeto es algo hecho con ese molde. Esto es la base de TODOS los widgets de Flutter: cada widget es una clase.",
         theory: [
             { code: { file: "clase.dart", code: `class Persona {
-  // Propiedades (los datos de cada objeto)
   String nombre;
   int edad;
 
-  // Constructor: cómo se crea una Persona
-  Persona(this.nombre, this.edad);
+  Persona(this.nombre, this.edad); // constructor
 
-  // Método: una acción que puede hacer
   void presentarse() {
     print('Soy $nombre, tengo $edad años');
   }
 
-  // Getter: un valor calculado al vuelo
-  bool get esMayor => edad >= 18;
+  bool get esMayor => edad >= 18; // getter
 }
 
 void main() {
-  var p = Persona('Ana', 21); // creamos un objeto
-  p.presentarse();            // usamos su método
-  print(p.esMayor);           // true
+  var p = Persona('Ana', 21);
+  p.presentarse();
+  print(p.esMayor);
 }` } },
-            { tip: { icon: "🔑", text: "this.nombre en el constructor es un atajo: toma lo que te pasan y lo guarda en la propiedad nombre automáticamente. Te ahorra escribir nombre = nombre." } },
-            { h: "Encapsulación: proteger los datos" },
-            { p: "Si pones _ antes del nombre, la propiedad se vuelve privada (nadie de fuera la toca directo). Así obligas a que todo cambio pase por tus métodos, evitando errores." },
-            { code: { file: "privado.dart", code: `class Cuenta {
-  double _saldo = 0; // privado (lleva _)
-
-  double get saldo => _saldo; // solo lectura
-
-  void depositar(double monto) {
-    if (monto > 0) _saldo += monto; // valida antes
-  }
-}` } },
+            { tip: { icon: "🔑", text: "this.nombre en el constructor es un atajo: toma lo que te pasan y lo guarda en la propiedad automáticamente." } },
         ],
         practice: [
-            {
-                title: "Clase Rectángulo",
-                goal: "Diseña una clase con propiedades y métodos.",
-                steps: [
-                    "class Rectangulo con double ancho y alto",
-                    "Métodos area() y perimetro()",
-                    "Método esCuadrado() que devuelva bool",
-                ],
+            { title: "Clase Rectángulo", goal: "Diseña una clase con propiedades y métodos.",
+                steps: ["class Rectangulo con double ancho y alto", "Métodos area() y perimetro()"],
                 solution: `class Rectangulo {
   double ancho;
   double alto;
@@ -441,542 +620,565 @@ void main() {
 
   double area() => ancho * alto;
   double perimetro() => 2 * (ancho + alto);
-  bool esCuadrado() => ancho == alto;
 }
 
 void main() {
   var r = Rectangulo(4, 4);
   print('Área: \${r.area()}');
-  print('¿Cuadrado? \${r.esCuadrado()}');
 }` },
         ],
         quiz: [
             { q: "¿Qué es una clase?", opts: ["Un objeto ya creado", "Un molde para crear objetos", "Una variable", "Un bucle"], correct: 1, fb: "La clase es el molde; los objetos se fabrican con ese molde." },
-            { q: "¿Para qué sirve el _ antes de una propiedad (ej. _saldo)?", opts: ["La hace pública", "La hace privada (solo accesible dentro de la clase)", "La borra", "La vuelve constante"], correct: 1, fb: "El _ vuelve privada la propiedad: la proteges de cambios externos." },
+        ],
+    },
+    /* ===================== MÓDULO FLUTTER (temas de examen) ===================== */
+    {
+        id: "f_widgets", mod: "Flutter", icon: Box, mins: "25 min",
+        title: "Widgets: qué son, tipos y cómo funcionan",
+        intro: "En Flutter, TODO es un widget: un texto, un botón, un espacio en blanco, hasta la pantalla completa. Entender esto es la base de todo lo demás.",
+        theory: [
+            { p: "Un widget es una pieza de interfaz descrita como una clase de Dart (¿recuerdas POO?). Cada widget tiene un método build() que describe CÓMO se debe ver, y Flutter usa esa descripción para dibujar píxeles en pantalla." },
+            { anim: "widgettree" },
+            { h: "Tipos de widgets" },
+            { table: {
+                    head: ["Tipo", "Ejemplos", "Característica"],
+                    rows: [
+                        ["Estructurales", "Scaffold, AppBar, Column, Row", "Organizan otros widgets"],
+                        ["Visuales", "Text, Icon, Image, Container", "Muestran algo en pantalla"],
+                        ["Interactivos", "Button, TextField, GestureDetector", "Reaccionan al usuario"],
+                        ["De estado", "StatelessWidget, StatefulWidget", "Definen si cambian o no"],
+                    ] } },
+            { h: "Cómo funcionan: el árbol de widgets" },
+            { p: "Cada widget puede contener a otros widgets como 'hijos' (child o children). Así se forma un árbol: MaterialApp contiene un Scaffold, que contiene un AppBar y un body, que contiene más widgets... Flutter recorre ese árbol completo y lo convierte en píxeles." },
+            { code: { file: "widget_basico.dart", code: `class MiSaludo extends StatelessWidget {
+  const MiSaludo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text('¡Hola, Flutter!');
+  }
+}` } },
+            { tip: { icon: "💡", text: "Regla de oro: si necesitas algo en pantalla, hay un widget para eso. Flutter no tiene 'HTML+CSS aparte'; todo, incluso el espaciado, es un widget (Padding, SizedBox)." } },
+        ],
+        practice: [
+            { title: "Identifica los widgets", goal: "Piensa en la pantalla de inicio de cualquier app (ej. Instagram). Lista 5 widgets que probablemente la componen y clasifícalos (estructural/visual/interactivo).",
+                steps: ["Imagina la pantalla", "Anota 5 elementos visuales", "Clasifica cada uno"],
+                solution: `// Ejemplo de respuesta:
+// Scaffold       → estructural (contenedor base de la pantalla)
+// AppBar         → estructural (barra superior)
+// Image          → visual (foto de perfil/post)
+// IconButton     → interactivo (like, comentar)
+// ListView       → estructural (lista de posts que se puede scrollear)` },
+        ],
+        quiz: [
+            { q: "¿Qué método describe CÓMO se ve un widget?", opts: ["init()", "build()", "create()", "render()"], correct: 1, fb: "build() devuelve la descripción de la UI; Flutter la usa para dibujar." },
+            { q: "¿Cómo se organiza la UI completa de una app Flutter?", opts: ["En una sola clase gigante", "Como un árbol de widgets anidados unos dentro de otros", "En archivos HTML separados", "No se organiza, es automático"], correct: 1, fb: "Todo widget puede contener otros widgets, formando un árbol." },
+            { q: "¿Cuál de estos es un widget INTERACTIVO?", opts: ["Text", "Container", "GestureDetector", "Padding"], correct: 2, fb: "GestureDetector reacciona a toques, arrastres, etc." },
         ],
     },
     {
-        id: "d_ctor", mod: "Dart", icon: Workflow, mins: "25 min",
-        title: "Constructores nombrados y factory",
-        intro: "El constructor es la función que crea el objeto. Dart te da varias formas de crear objetos según la situación. Esto se ve MUCHO en Flutter.",
+        id: "f_stateless", mod: "Flutter", icon: Lightbulb, mins: "25 min",
+        title: "StatelessWidget: características y uso",
+        intro: "Un StatelessWidget es un widget que NO cambia una vez dibujado. Si la pantalla necesita verse distinto, Flutter tiene que crear un widget nuevo, no 'editar' el viejo.",
         theory: [
-            { h: "Constructores nombrados: varias formas de crear lo mismo" },
-            { p: "Dart no deja tener dos constructores con el mismo nombre. La solución: ponerles nombre con un punto. Así ofreces varias maneras claras de crear el objeto." },
-            { code: { file: "nombrados.dart", code: `class Punto {
-  final double x, y;
+            { anim: "svs" },
+            { h: "Características" },
+            { list: [
+                    "Es inmutable: sus propiedades se asignan una vez (final) y no cambian.",
+                    "No tiene memoria propia entre redibujados.",
+                    "Se reconstruye solo si su PADRE cambia y le pasa nuevos datos.",
+                    "Es más ligero y rápido: ideal para UI que no necesita reaccionar a eventos.",
+                ] },
+            { code: { file: "stateless.dart", code: `class Tarjeta extends StatelessWidget {
+  final String titulo; // dato final: no cambia
 
-  Punto(this.x, this.y);          // normal
-  Punto.origen() : x = 0, y = 0;  // nombrado: el (0,0)
+  const Tarjeta({super.key, required this.titulo});
 
   @override
-  String toString() => '($x, $y)';
-}
-
-void main() {
-  var p1 = Punto(3, 4);   // (3, 4)
-  var p0 = Punto.origen(); // (0, 0)
-}` } },
-            { tip: { icon: "✓", text: "Flutter usa esto a cada rato: EdgeInsets.all(), BorderRadius.circular(), SizedBox.shrink() son constructores nombrados." } },
-            { h: "factory: control total sobre qué objeto devuelves" },
-            { p: "Un factory parece un constructor normal, pero por dentro puede decidir qué devolver. Su uso #1: convertir datos de internet (JSON) en objetos." },
-            { code: { file: "factory.dart", code: `class Producto {
-  final String nombre;
-  final double precio;
-  Producto(this.nombre, this.precio);
-
-  // Crea un Producto a partir de un Map (JSON)
-  factory Producto.fromJson(Map<String, dynamic> json) {
-    return Producto(
-      json['nombre'],
-      (json['precio'] as num).toDouble(),
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(titulo),
+      ),
     );
   }
 }` } },
-        ],
-        practice: [
-            {
-                title: "Rectángulo y cuadrado",
-                goal: "Usa un constructor nombrado que redirige a otro.",
-                steps: [
-                    "class Rectangulo(ancho, alto)",
-                    "Constructor nombrado .cuadrado(lado) que reutilice el principal con : this(lado, lado)",
-                ],
-                solution: `class Rectangulo {
-  final double ancho, alto;
-  Rectangulo(this.ancho, this.alto);
-
-  // Reutiliza el constructor principal
-  Rectangulo.cuadrado(double lado) : this(lado, lado);
-}
-
-void main() {
-  var c = Rectangulo.cuadrado(5);
-  print('\${c.ancho} x \${c.alto}'); // 5.0 x 5.0
-}` },
-        ],
-        quiz: [
-            { q: "¿Por qué existen los constructores nombrados (ej. Punto.origen())?", opts: ["Porque Dart no permite dos constructores con el mismo nombre", "Para hacer el código más lento", "Porque son obligatorios", "Para borrar objetos"], correct: 0, fb: "Permiten varias formas de crear un objeto, ya que no se puede repetir el nombre." },
-            { q: "¿Cuál es el uso más común de un factory en Flutter?", opts: ["Hacer bucles", "Convertir JSON (datos de internet) en objetos", "Pintar la pantalla", "Sumar números"], correct: 1, fb: "factory Producto.fromJson(...) transforma datos de una API en un objeto." },
-        ],
-    },
-    {
-        id: "d_inherit", mod: "Dart", icon: GitBranch, mins: "25 min",
-        title: "Herencia, clases abstractas y mixins",
-        intro: "La herencia te deja crear una clase a partir de otra para no repetir código. 'Un Perro ES UN Animal' → Perro hereda de Animal.",
-        theory: [
-            { h: "extends: heredar de otra clase" },
-            { code: { file: "herencia.dart", code: `class Animal {
-  String nombre;
-  Animal(this.nombre);
-  void hablar() => print('...');
-}
-
-class Perro extends Animal {
-  Perro(String nombre) : super(nombre); // pasa el dato al padre
-
-  @override // reemplazamos el método del padre
-  void hablar() => print('¡Guau!');
-}` } },
-            { h: "Clases abstractas: un molde incompleto" },
-            { p: "Una clase abstracta define QUÉ debe existir, pero no cómo. No se puede crear directamente; obliga a sus hijas a completar los métodos." },
-            { code: { file: "abstract.dart", code: `abstract class Figura {
-  double area(); // sin cuerpo: las hijas lo definen
-}
-
-class Circulo extends Figura {
-  double radio;
-  Circulo(this.radio);
-  @override
-  double area() => 3.14159 * radio * radio;
-}` } },
-            { h: "extends vs implements vs mixins" },
+            { h: "¿Cuándo usarlo?" },
+            { p: "Úsalo para todo lo que sea puramente visual y no interactivo por sí mismo: títulos, iconos, tarjetas de presentación, separadores. Si el contenido viene de afuera (por parámetros) y nunca cambia DESDE DENTRO del widget, es candidato a Stateless." },
+            { h: "Diferencias con StatefulWidget" },
             { table: {
-                    head: ["Palabra", "Significa", "Cuántas"],
+                    head: ["", "StatelessWidget", "StatefulWidget"],
                     rows: [
-                        ["extends", "Heredo código de... (es un)", "Solo 1"],
-                        ["implements", "Cumplo el contrato de... (reescribo todo)", "Varias"],
-                        ["with (mixin)", "Inyecto habilidades extra", "Varias"],
+                        ["¿Tiene memoria interna?", "No", "Sí (un objeto State)"],
+                        ["¿Se puede redibujar solo?", "No, solo si el padre cambia", "Sí, con setState()"],
+                        ["Uso típico", "Texto, iconos, tarjetas estáticas", "Formularios, contadores, animaciones"],
+                        ["Costo de rendimiento", "Más ligero", "Un poco más pesado (gestiona estado)"],
                     ] } },
-            { code: { file: "mixin.dart", code: `mixin Nadador {
-  void nadar() => print('Nadando...');
-}
-mixin Caminante {
-  void caminar() => print('Caminando...');
-}
-
-class Pato extends Animal with Caminante, Nadador {
-  Pato(String n) : super(n);
-}` } },
-            { tip: { icon: "✓", text: "En Flutter verás mixins seguido, por ejemplo SingleTickerProviderStateMixin para animaciones." } },
         ],
         practice: [
-            {
-                title: "Jerarquía de figuras",
-                goal: "Usa una clase abstracta y herencia con una lista.",
-                steps: [
-                    "abstract class Figura con area()",
-                    "Circulo y Cuadrado que extiendan Figura",
-                    "List<Figura> con ambas y recórrela imprimiendo el área",
-                ],
-                solution: `abstract class Figura {
-  double area();
-}
+            { title: "Tarjeta de perfil", goal: "Construye un StatelessWidget reutilizable con parámetros.",
+                steps: ["class TarjetaPerfil con nombre y cargo (String, final)", "build() que devuelva una Column con dos Text"],
+                solution: `class TarjetaPerfil extends StatelessWidget {
+  final String nombre;
+  final String cargo;
+  const TarjetaPerfil({super.key, required this.nombre, required this.cargo});
 
-class Circulo extends Figura {
-  double radio;
-  Circulo(this.radio);
   @override
-  double area() => 3.14159 * radio * radio;
-}
-
-class Cuadrado extends Figura {
-  double lado;
-  Cuadrado(this.lado);
-  @override
-  double area() => lado * lado;
-}
-
-void main() {
-  List<Figura> figuras = [Circulo(2), Cuadrado(3)];
-  for (var f in figuras) {
-    print('Área: \${f.area().toStringAsFixed(2)}');
-  }
-}` },
-        ],
-        quiz: [
-            { q: "'Un Perro ES UN Animal'. ¿Qué palabra usas?", opts: ["implements", "extends", "with", "factory"], correct: 1, fb: "extends crea la relación 'es un' y hereda el código del padre." },
-            { q: "¿Qué tiene de especial una clase abstracta?", opts: ["Es más rápida", "No se puede crear directamente; obliga a las hijas a completarla", "No tiene métodos", "Es privada"], correct: 1, fb: "Define el molde pero no se instancia sola; las subclases la completan." },
-        ],
-    },
-    {
-        id: "d_async", mod: "Dart", icon: Zap, mins: "35 min",
-        title: "Programación asíncrona (Future, async/await y Streams)",
-        intro: "Este es EL tema más importante. Tu app hace una sola cosa a la vez. Si pides datos a internet y esperas parado, la pantalla se congela. La asincronía resuelve esto: 'sigue trabajando mientras llega la respuesta'.",
-        theory: [
-            { h: "El problema: un solo hilo" },
-            { p: "Flutter dibuja la pantalla 60 veces por segundo (un cuadro cada 16.6 ms). Si una tarea pesada bloquea ese hilo, la app se traba (lo llaman 'UI jank'). La solución es no esperar bloqueando." },
-            { tip: { icon: "💡", text: "Regla de oro: si la tarea es ESPERAR (red, internet) → usa Future. Si la tarea es ESFUERZO de CPU (procesar algo enorme) → usa Isolate." } },
-            { h: "Future: un valor que llegará 'en el futuro'" },
-            { p: "Un Future es una promesa: 'te entregaré un resultado pronto'. Con async/await escribes código asíncrono que se LEE como si fuera normal, de arriba a abajo." },
-            { code: { file: "future.dart", code: `// async marca que la función espera cosas
-Future<String> obtenerDatos() async {
-  // await = "espera aquí sin congelar la app"
-  await Future.delayed(Duration(seconds: 2));
-  return 'Datos listos';
-}
-
-void main() async {
-  print('Pidiendo...');
-  final res = await obtenerDatos(); // espera 2s
-  print(res); // se imprime después
-}` } },
-            { tip: { icon: "⚠️", text: "Error típico de principiante: usar await sin poner async en la función. Si usas await, la función DEBE ser async." } },
-            { h: "Stream: muchos valores a lo largo del tiempo" },
-            { p: "Un Future entrega UN valor y termina. Un Stream es un canal que va entregando valores poco a poco (como un GPS mandando tu ubicación cada segundo)." },
-            { code: { file: "stream.dart", code: `// async* + yield = generador de un stream
-Stream<int> contador(int hasta) async* {
-  for (var i = 1; i <= hasta; i++) {
-    await Future.delayed(Duration(seconds: 1));
-    yield i; // suelta un valor al canal
-  }
-}
-
-void main() async {
-  // await for = escucha cada valor que llega
-  await for (final n in contador(3)) {
-    print('Recibí: $n');
-  }
-}` } },
-        ],
-        practice: [
-            {
-                title: "Tu primer Future",
-                goal: "Crea y consume un Future con async/await.",
-                steps: [
-                    "Future<String> obtenerMensaje() con delay de 2 seg",
-                    "En main() (async), espéralo con await e imprímelo",
-                    "Bonus: pon un print ANTES del await. ¿Cuál sale primero?",
-                ],
-                solution: `Future<String> obtenerMensaje() async {
-  await Future.delayed(Duration(seconds: 2));
-  return '¡Hola desde el futuro!';
-}
-
-void main() async {
-  print('Esperando...');        // sale primero
-  final msg = await obtenerMensaje();
-  print(msg);                    // sale 2s después
-}` },
-            {
-                title: "Stream contador",
-                goal: "Emite números con pausas usando un Stream.",
-                steps: ["Stream<int> contador(int hasta) con async*", "Cada valor con delay de 1s usando yield", "Consúmelo con await for"],
-                solution: `Stream<int> contador(int hasta) async* {
-  for (var i = 1; i <= hasta; i++) {
-    await Future.delayed(Duration(seconds: 1));
-    yield i;
-  }
-}
-
-void main() async {
-  await for (final n in contador(5)) {
-    print('Número: $n');
-  }
-}` },
-        ],
-        quiz: [
-            { q: "¿Qué palabra acompaña SIEMPRE a await?", opts: ["yield", "async", "return", "void"], correct: 1, fb: "Si una función usa await, debe estar marcada como async." },
-            { q: "Para una tarea que entrega MUCHOS valores con el tiempo (ej. GPS), usas...", opts: ["Future", "Stream", "int", "bool"], correct: 1, fb: "Stream es un canal que emite varios valores; Future entrega solo uno." },
-        ],
-    },
-    {
-        id: "d_err", mod: "Dart", icon: AlertTriangle, mins: "20 min",
-        title: "Manejo de errores",
-        intro: "Los errores van a pasar (internet falla, datos vacíos...). En vez de que la app truene, los ATRAPAS y decides qué hacer. Eso es try/catch.",
-        theory: [
-            { code: { file: "trycatch.dart", code: `try {
-  // código que PODRÍA fallar
-  var resultado = 10 ~/ 0; // división entre cero
-} catch (e) {
-  // si falla, caemos aquí
-  print('Algo salió mal: $e');
-} finally {
-  // esto SIEMPRE corre, falle o no
-  print('Listo');
-}` } },
-            { h: "Excepciones personalizadas (tus propios errores)" },
-            { code: { file: "excepcion.dart", code: `class SaldoInsuficiente implements Exception {
-  final String mensaje;
-  SaldoInsuficiente(this.mensaje);
-  @override
-  String toString() => mensaje;
-}
-
-void retirar(double saldo, double monto) {
-  if (monto > saldo) {
-    throw SaldoInsuficiente('No tienes fondos');
-  }
-}` } },
-            { tip: { icon: "⚠️", text: "throw lanza el error. catch lo atrapa. No confundas throw (lanzar error) con return (devolver un valor normal)." } },
-        ],
-        practice: [
-            {
-                title: "Excepción personalizada",
-                goal: "Crea y atrapa tu propio error de validación.",
-                steps: [
-                    "class ValidacionException implements Exception con mensaje",
-                    "validarEdad(int edad) que lance la excepción si edad < 18",
-                    "Atrápala en main() con try/catch e imprime el mensaje",
-                ],
-                solution: `class ValidacionException implements Exception {
-  final String mensaje;
-  ValidacionException(this.mensaje);
-  @override
-  String toString() => mensaje;
-}
-
-void validarEdad(int edad) {
-  if (edad < 18) {
-    throw ValidacionException('Debes ser mayor de edad');
-  }
-  print('Acceso permitido');
-}
-
-void main() {
-  try {
-    validarEdad(15);
-  } catch (e) {
-    print('Error: $e');
-  } finally {
-    print('Validación terminada');
-  }
-}` },
-        ],
-        quiz: [
-            { q: "¿Qué bloque se ejecuta SIEMPRE, haya error o no?", opts: ["try", "catch", "finally", "throw"], correct: 2, fb: "finally corre pase lo que pase: ideal para limpiar o cerrar cosas." },
-            { q: "¿Cuál palabra LANZA un error?", opts: ["catch", "throw", "return", "finally"], correct: 1, fb: "throw lanza la excepción; catch la atrapa." },
-        ],
-    },
-
-    /* ===================== MÓDULO FLUTTER / PROVIDER ===================== */
-    {
-        id: "p_problema", mod: "Flutter + Provider", icon: AlertTriangle, mins: "20 min",
-        title: "El problema: ¿por qué Provider?",
-        intro: "Ya sabes Dart. Ahora, en una app real, muchas pantallas necesitan compartir el mismo dato (el usuario, el carrito...). Pasarlo a mano por todos lados es un dolor. Provider lo resuelve.",
-        theory: [
-            { h: "Prop drilling: el dolor de pasar datos a mano" },
-            { p: "Imagina que el nombre del usuario está arriba del todo y lo necesitas en un botón 10 niveles más abajo. Sin Provider, tendrías que pasarlo por el constructor de cada widget intermedio, aunque esos widgets ni lo usen. Eso se llama 'prop drilling' y vuelve el código rígido." },
-            { tip: { icon: "⚠️", text: "También setState() tiene límites: si dos widgets hermanos en ramas separadas necesitan el mismo dato, te toca 'subir el estado' al padre común y se redibuja de más." } },
-            { p: "Provider es la solución: un 'depósito de datos' que vive aparte del árbol de widgets, y al que cualquier pantalla puede asomarse sin cadenas de constructores." },
-        ],
-        practice: [
-            {
-                title: "Identifica el problema",
-                goal: "Razona (sin código): tienes Pantalla A con un TextField del nombre y Pantalla B con un AppBar que debe mostrar ese nombre. Piensa por qué pasarlo por constructores sería complicado, y qué pieza necesitarías para compartirlo.",
-                steps: ["Piensa el flujo del dato", "Anota dónde se 'rompería' al pasarlo a mano"],
-                solution: `// No hay código aún: es conceptual.
-// Conclusión: necesitas un estado COMPARTIDO y central
-// (un ChangeNotifier expuesto con Provider) para que
-// ambas pantallas lean el mismo nombre sin pasarlo
-// por cada constructor intermedio.` },
-        ],
-        quiz: [
-            { q: "¿Qué es 'prop drilling'?", opts: ["Un tipo de bucle", "Pasar datos por muchos widgets que no los usan solo para llegar a uno lejano", "Un error de compilación", "Una animación"], correct: 1, fb: "Es la molestia de encadenar datos por constructores intermedios innecesarios." },
-            { q: "Provider funciona como un...", opts: ["bucle infinito", "depósito de datos central al que las pantallas se asoman", "tipo de variable", "color"], correct: 1, fb: "Vive fuera del árbol normal y cualquier widget puede leerlo." },
-        ],
-    },
-    {
-        id: "p_filosofia", mod: "Flutter + Provider", icon: Radio, mins: "20 min",
-        title: "La filosofía de Provider (Radio, Antena, Oyente)",
-        intro: "Provider tiene 3 piezas. La mejor forma de entenderlas es con una analogía de radio: alguien transmite, una antena reparte la señal, y los oyentes escuchan.",
-        theory: [
-            { table: {
-                    head: ["Pieza", "Analogía", "Qué hace"],
-                    rows: [
-                        ["ChangeNotifier", "La Radio 📻", "Guarda los datos y avisa cuando cambian"],
-                        ["ChangeNotifierProvider", "La Antena 📡", "Mete la radio en la app para que todos la capten"],
-                        ["Consumer / watch", "El Oyente 👂", "Los widgets que escuchan y se redibujan al cambiar"],
-                    ] } },
-            { p: "El ChangeNotifier es una clase normal que 'mezcla' (with) la habilidad de notificar. Cuando cambias un dato y llamas notifyListeners(), todos los oyentes se enteran y se actualizan solos." },
-            { code: { file: "modelo.dart", code: `class CartProvider with ChangeNotifier {
-  final List<String> _items = []; // privado
-  List<String> get items => _items; // solo lectura
-
-  void addItem(String item) {
-    _items.add(item);
-    notifyListeners(); // ¡avisa a todos los oyentes!
-  }
-}` } },
-            { tip: { icon: "🔑", text: "La clave es notifyListeners(). Sin esa línea, cambias el dato pero la pantalla NO se entera y no se actualiza." } },
-        ],
-        practice: [
-            {
-                title: "Tu propio ChangeNotifier (contador)",
-                goal: "Crea un modelo de estado con un contador.",
-                steps: [
-                    "class ContadorProvider with ChangeNotifier",
-                    "Un int privado _cuenta y su getter",
-                    "Método incrementar() que sume 1 y llame notifyListeners()",
-                ],
-                solution: `class ContadorProvider with ChangeNotifier {
-  int _cuenta = 0;
-  int get cuenta => _cuenta;
-
-  void incrementar() {
-    _cuenta++;
-    notifyListeners(); // sin esto, la UI no se actualiza
-  }
-}` },
-        ],
-        quiz: [
-            { q: "¿Qué pieza es 'La Radio' que guarda los datos y avisa de cambios?", opts: ["ChangeNotifierProvider", "Consumer", "ChangeNotifier", "BuildContext"], correct: 2, fb: "ChangeNotifier guarda el estado y emite las señales." },
-            { q: "¿Qué línea avisa a la UI que un dato cambió?", opts: ["return", "notifyListeners()", "setState()", "print()"], correct: 1, fb: "notifyListeners() despierta a todos los oyentes para que se redibujen." },
-        ],
-    },
-    {
-        id: "p_impl", mod: "Flutter + Provider", icon: Layers, mins: "30 min",
-        title: "Implementación paso a paso",
-        intro: "Ya tienes el modelo (la radio). Ahora hay que (1) inyectarlo en la app con la 'antena' y (2) consumirlo en las pantallas. Tres pasos y listo.",
-        theory: [
-            { h: "Paso 1 — Inyectar el Provider en la raíz" },
-            { code: { file: "main.dart", code: `void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => CartProvider(),
-      child: const MyApp(),
-    ),
-  );
-}` } },
-            { h: "Paso 2 — Varios providers a la vez: MultiProvider" },
-            { code: { file: "multi.dart", code: `void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(cargo),
       ],
-      child: const MyApp(),
-    ),
-  );
-}` } },
-            { h: "Paso 3 — Consumir el dato (3 herramientas)" },
-            { list: [
-                    "context.watch<T>() → cuando el widget DEBE redibujarse al cambiar el dato.",
-                    "context.read<T>() → para llamar métodos (ej. un botón) SIN redibujar.",
-                    "Consumer<T> → envuelve solo la parte pequeña del árbol que cambia.",
-                ] },
-            { code: { file: "consumir.dart", code: `// watch: se actualiza cuando cambia el carrito
-final items = context.watch<CartProvider>().items;
+    );
+  }
+}` },
+        ],
+        quiz: [
+            { q: "¿Por qué un StatelessWidget no puede redibujarse solo?", opts: ["Porque está roto", "Porque no tiene memoria interna (estado) que rastrear", "Porque es muy lento", "Sí puede, usando setState"], correct: 1, fb: "No guarda estado propio; solo cambia si el padre le pasa nuevos datos." },
+            { q: "¿Cuál es un buen caso de uso para StatelessWidget?", opts: ["Un formulario con validación en tiempo real", "Un contador que sube al tocar un botón", "Una tarjeta de texto fijo que no reacciona a nada", "Una animación infinita"], correct: 2, fb: "Contenido puramente visual sin lógica interna de cambio." },
+        ],
+    },
+    {
+        id: "f_stateful", mod: "Flutter", icon: RefreshCw, mins: "30 min",
+        title: "StatefulWidget: estado, ciclo de vida y cambios dinámicos",
+        intro: "Un StatefulWidget SÍ puede cambiar lo que muestra, porque carga con un objeto 'State' que actúa como su memoria. Cuando ese estado cambia, Flutter vuelve a dibujar.",
+        theory: [
+            { p: "En realidad son DOS clases trabajando juntas: el Widget (la configuración, inmutable) y el State (la memoria, mutable). El Widget se reconstruye seguido, pero el State sobrevive entre reconstrucciones." },
+            { code: { file: "stateful.dart", code: `class Contador extends StatefulWidget {
+  const Contador({super.key});
+  @override
+  State<Contador> createState() => _ContadorState();
+}
 
-// read: solo dispara una acción, no escucha
-onPressed: () => context.read<CartProvider>().addItem('Pan'),` } },
-            { tip: { icon: "💡", text: "Regla simple: watch para MOSTRAR datos, read para EJECUTAR acciones (botones)." } },
+class _ContadorState extends State<Contador> {
+  int _cuenta = 0; // ESTO es el estado: vive en el objeto State
+
+  void _incrementar() {
+    setState(() {       // avisa a Flutter: "algo cambió, redibuja"
+      _cuenta++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('Cuenta: $_cuenta'),
+        ElevatedButton(onPressed: _incrementar, child: const Text('+1')),
+      ],
+    );
+  }
+}` } },
+            { anim: "setstate" },
+            { h: "Ciclo de vida de un StatefulWidget" },
+            { anim: "lifecycle" },
+            { list: [
+                    "createState() → Flutter crea el objeto State asociado.",
+                    "initState() → corre UNA sola vez, ideal para inicializar datos o suscribirse a algo.",
+                    "build() → dibuja la UI; se vuelve a llamar cada vez que el estado cambia.",
+                    "setState() → tú lo llamas cuando algo cambió; dispara un nuevo build().",
+                    "dispose() → limpia recursos (timers, controllers) cuando el widget se destruye.",
+                ] },
+            { tip: { icon: "⚠️", text: "Error común: modificar una variable de estado SIN envolverla en setState(). Si haces eso, el dato cambia en memoria pero la pantalla NO se actualiza." } },
         ],
         practice: [
-            {
-                title: "Conecta el contador a un botón",
-                goal: "Usa watch para mostrar y read para incrementar.",
-                steps: [
-                    "Muestra la cuenta con context.watch<ContadorProvider>().cuenta",
-                    "Un botón que llame context.read<ContadorProvider>().incrementar()",
-                ],
-                solution: `@override
-Widget build(BuildContext context) {
-  // watch: mostrar el valor (se redibuja al cambiar)
-  final cuenta = context.watch<ContadorProvider>().cuenta;
+            { title: "Interruptor de luz", goal: "Crea un StatefulWidget que cambie de texto/color al tocarlo.",
+                steps: ["bool _encendido = false en el State", "Un GestureDetector que invierta el valor con setState", "Muestra 'Encendido' o 'Apagado' según el booleano"],
+                solution: `class Interruptor extends StatefulWidget {
+  const Interruptor({super.key});
+  @override
+  State<Interruptor> createState() => _InterruptorState();
+}
 
-  return Column(
+class _InterruptorState extends State<Interruptor> {
+  bool _encendido = false;
+
+  void _alternar() {
+    setState(() {
+      _encendido = !_encendido;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _alternar,
+      child: Text(_encendido ? 'Encendido' : 'Apagado'),
+    );
+  }
+}` },
+        ],
+        quiz: [
+            { q: "¿Qué método ejecutas para avisar que algo cambió y la UI debe redibujarse?", opts: ["initState()", "setState()", "dispose()", "build()"], correct: 1, fb: "setState() marca el widget como 'sucio' y dispara un nuevo build()." },
+            { q: "¿Qué pasa si cambias una variable de estado SIN usar setState()?", opts: ["La app truena de inmediato", "El dato cambia pero la pantalla no se actualiza", "Funciona exactamente igual", "Se ejecuta dispose()"], correct: 1, fb: "Flutter no se entera del cambio si no se lo notificas con setState()." },
+            { q: "¿Qué método del ciclo de vida corre solo UNA vez, al crear el widget?", opts: ["build()", "setState()", "initState()", "dispose()"], correct: 2, fb: "initState() es perfecto para inicializar datos una sola vez." },
+        ],
+    },
+    {
+        id: "f_state_mgmt", mod: "Flutter", icon: Radio, mins: "30 min",
+        title: "Gestión de estado: qué es y comparación de gestores",
+        intro: "El 'estado' es cualquier dato que puede cambiar y que afecta lo que se ve en pantalla (un contador, si el usuario inició sesión, los items de un carrito). Gestionarlo bien es EL tema central de Flutter en producción.",
+        theory: [
+            { p: "Cuando el estado es pequeño y local a un solo widget, setState() basta. Pero cuando MUCHAS pantallas necesitan el mismo dato (usuario logueado, carrito de compras), pasarlo a mano por cada constructor ('prop drilling') se vuelve un dolor. Ahí entran los gestores de estado." },
+            { anim: "managers" },
+            { h: "Comparación de los gestores más usados" },
+            { table: {
+                    head: ["Gestor", "Idea central", "Cuándo conviene"],
+                    rows: [
+                        ["setState", "El propio widget guarda y actualiza su dato", "Estado simple, local, una sola pantalla"],
+                        ["Provider", "Un ChangeNotifier centraliza el dato; las pantallas hacen watch/read", "Apps medianas, curva de aprendizaje suave"],
+                        ["Riverpod", "Como Provider, pero sin BuildContext y verificado en compilación", "Apps que quieren más seguridad y testing fácil"],
+                        ["Bloc", "Eventos entran, el Bloc los procesa y emite Estados (muy formal)", "Apps grandes en equipo, lógica de negocio compleja"],
+                        ["GetX", "Variables reactivas (.obs) que la UI escucha automáticamente", "Desarrollo rápido, apps pequeñas/medianas"],
+                    ] } },
+            { h: "Provider en código (el más usado en la materia)" },
+            { code: { file: "provider.dart", code: `class CarritoProvider with ChangeNotifier {
+  final List<String> _items = [];
+  List<String> get items => _items;
+
+  void agregar(String item) {
+    _items.add(item);
+    notifyListeners(); // avisa a todos los que escuchan
+  }
+}
+
+// En main():
+ChangeNotifierProvider(
+  create: (_) => CarritoProvider(),
+  child: const MyApp(),
+);
+
+// En cualquier pantalla:
+final items = context.watch<CarritoProvider>().items; // escucha
+context.read<CarritoProvider>().agregar('Pan');        // ejecuta acción` } },
+            { tip: { icon: "💡", text: "Regla simple: watch para MOSTRAR datos (se redibuja al cambiar), read para EJECUTAR acciones como en un botón (no se suscribe)." } },
+        ],
+        practice: [
+            { title: "Tu primer ChangeNotifier", goal: "Crea un modelo de estado simple con Provider.",
+                steps: ["class TemaProvider with ChangeNotifier", "bool _oscuro = false y su getter", "Método alternar() que invierta el valor y notifique"],
+                solution: `class TemaProvider with ChangeNotifier {
+  bool _oscuro = false;
+  bool get oscuro => _oscuro;
+
+  void alternar() {
+    _oscuro = !_oscuro;
+    notifyListeners(); // sin esto, la UI no se entera
+  }
+}` },
+        ],
+        quiz: [
+            { q: "¿Qué es 'el estado' en Flutter?", opts: ["El país donde corre la app", "Cualquier dato que puede cambiar y afecta lo que se ve en pantalla", "Un tipo de widget", "Un archivo de configuración"], correct: 1, fb: "Estado = datos mutables que la UI debe reflejar." },
+            { q: "¿Qué línea en Provider avisa a la UI que el dato cambió?", opts: ["setState()", "notifyListeners()", "build()", "initState()"], correct: 1, fb: "notifyListeners() despierta a todos los widgets que escuchan ese provider." },
+            { q: "¿Qué caracteriza a Bloc frente a los demás?", opts: ["No usa Dart", "Flujo formal: Eventos entran, el Bloc emite Estados", "Es el más simple de todos", "Solo sirve para animaciones"], correct: 1, fb: "Bloc separa estrictamente eventos de entrada y estados de salida." },
+            { q: "¿Cuál gestor usa variables 'reactivas' con .obs?", opts: ["Provider", "Riverpod", "Bloc", "GetX"], correct: 3, fb: "GetX usa .obs para que la UI reaccione automáticamente a cambios." },
+        ],
+    },
+    {
+        id: "f_layout", mod: "Flutter", icon: LayoutGrid, mins: "30 min",
+        title: "Widgets de Layout: Row, Column, Stack, Expanded y más",
+        intro: "Los widgets de layout no muestran contenido por sí mismos: ORGANIZAN a sus hijos en el espacio. Son el 'CSS' de Flutter.",
+        theory: [
+            { anim: "layout" },
+            { h: "Los layouts esenciales" },
+            { table: {
+                    head: ["Widget", "Qué hace"],
+                    rows: [
+                        ["Container", "Una caja: le puedes dar color, tamaño, bordes, padding, margin"],
+                        ["Row", "Pone a sus hijos en fila (horizontal)"],
+                        ["Column", "Pone a sus hijos uno debajo del otro (vertical)"],
+                        ["Stack", "Apila widgets uno encima del otro (capas)"],
+                        ["Expanded", "Hace que un hijo de Row/Column llene el espacio sobrante"],
+                        ["Padding", "Agrega espacio interno alrededor de un widget"],
+                        ["Center", "Centra a su único hijo dentro del espacio disponible"],
+                        ["ListView", "Una columna que se puede scrollear, ideal para listas largas"],
+                    ] } },
+            { code: { file: "layouts.dart", code: `// Row con Expanded: una caja fija y otra que llena el resto
+Row(
+  children: [
+    Container(width: 50, color: Colors.blue),
+    Expanded(
+      child: Container(color: Colors.green),
+    ),
+  ],
+)
+
+// Stack: superponer un texto sobre una imagen
+Stack(
+  children: [
+    Image.network('https://...'),
+    const Positioned(
+      bottom: 10, left: 10,
+      child: Text('Texto encima', style: TextStyle(color: Colors.white)),
+    ),
+  ],
+)
+
+// ListView: lista scrolleable de muchos elementos
+ListView.builder(
+  itemCount: productos.length,
+  itemBuilder: (context, i) => ListTile(title: Text(productos[i])),
+)` } },
+            { tip: { icon: "⚠️", text: "Error típico: usar Column sin Expanded cuando el contenido es más alto que la pantalla → 'overflow' (la franja amarilla/negra de error). La solución casi siempre es ListView o Expanded." } },
+        ],
+        practice: [
+            { title: "Tarjeta con layout combinado", goal: "Combina Container, Row, Expanded y Padding.",
+                steps: [
+                    "Un Container con padding de 12",
+                    "Dentro, un Row con un ícono fijo a la izquierda",
+                    "Y un Expanded con un Column de título + subtítulo a la derecha",
+                ],
+                solution: `Container(
+  padding: const EdgeInsets.all(12),
+  child: Row(
     children: [
-      Text('Cuenta: $cuenta'),
-      ElevatedButton(
-        // read: solo dispara la acción
-        onPressed: () =>
-            context.read<ContadorProvider>().incrementar(),
-        child: const Text('Sumar'),
+      const Icon(Icons.person, size: 40),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('Gael', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Software Engineering'),
+          ],
+        ),
       ),
     ],
-  );
-}` },
+  ),
+)` },
         ],
         quiz: [
-            { q: "Para que un botón ejecute una acción sin redibujarse, usas...", opts: ["watch", "read", "Consumer", "notifyListeners"], correct: 1, fb: "read accede al método sin suscribir el widget a cambios." },
-            { q: "¿Para qué sirve MultiProvider?", opts: ["Para hacer bucles", "Para inyectar varios providers de forma limpia, sin anidar", "Para borrar el estado", "Para pintar colores"], correct: 1, fb: "Agrupa varios providers (auth, carrito, tema...) sin un anidamiento feo." },
+            { q: "¿Qué widget pone a sus hijos uno ENCIMA del otro (capas)?", opts: ["Row", "Column", "Stack", "Padding"], correct: 2, fb: "Stack superpone widgets, como capas en un editor de imágenes." },
+            { q: "¿Para qué sirve Expanded?", opts: ["Para centrar un widget", "Para que un hijo de Row/Column llene el espacio sobrante", "Para darle color a una caja", "Para hacer scroll"], correct: 1, fb: "Expanded reparte el espacio disponible entre los hijos marcados." },
+            { q: "Tienes una lista de 200 elementos. ¿Qué widget usas para mostrarla sin que truene por overflow?", opts: ["Column normal", "Row", "ListView", "Center"], correct: 2, fb: "ListView permite scroll y solo dibuja lo visible: ideal para listas largas." },
         ],
     },
     {
-        id: "p_buenas", mod: "Flutter + Provider", icon: Star, mins: "25 min",
-        title: "Buenas prácticas (nivel pro)",
-        intro: "Estos detalles separan el código de principiante del código profesional. No son difíciles; son hábitos.",
+        id: "f_ui_design", mod: "Flutter", icon: Smartphone, mins: "25 min",
+        title: "Diseño de interfaces UI en Flutter",
+        intro: "Diseñar una pantalla en Flutter es decidir QUÉ widgets usar y CÓMO anidarlos para lograr la estructura visual que quieres, partiendo siempre de Scaffold.",
         theory: [
-            { h: "1. Encapsulación: nunca expongas la lista mutable" },
-            { p: "Si dejas tu lista pública, alguien podría hacer cart.items.add(x) desde un botón y olvidar notifyListeners(), rompiendo todo. Exponla como solo lectura." },
-            { code: { file: "encapsular.dart", code: `final List<Product> _products = [];
-// Copia de solo lectura: nadie la modifica por fuera
-List<Product> get products => List.unmodifiable(_products);
+            { p: "Scaffold es el esqueleto estándar de una pantalla: te da appBar (la barra superior), body (el contenido principal), y floatingActionButton (un botón flotante), entre otros espacios ya definidos por Material Design." },
+            { code: { file: "pantalla.dart", code: `class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
-void addProduct(Product p) {
-  _products.add(p);
-  notifyListeners(); // único camino para cambiar
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Inicio')),
+      body: const Center(
+        child: Text('Bienvenido'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
 }` } },
-            { h: "2. Flujo unidireccional (UFD)" },
-            { p: "Los datos van en UNA dirección: el estado baja hacia la UI (UI = f(State)), y la UI solo dispara eventos hacia arriba. La UI nunca cambia datos directamente; solo avisa 'pasó esto'." },
-            { h: "3. View-State con enum: estados de pantalla limpios" },
-            { p: "En vez de mil booleanos (isLoading, isError...), usa un enum con los estados posibles. Más claro y sin combinaciones imposibles." },
-            { code: { file: "viewstate.dart", code: `enum HomeState { initial, loading, loaded, error }
-
-// En la UI, un switch cubre todos los casos:
-return switch (provider.state) {
-  HomeState.loading => LoadingWidget(),
-  HomeState.error   => ErrorWidget(),
-  HomeState.loaded  => DataList(),
-  _ => const SizedBox(),
-};` } },
-            { h: "4. Smart vs Dumb widgets" },
-            { table: {
-                    head: ["Tipo", "Responsabilidad", "Sabe de Provider?"],
-                    rows: [
-                        ["Smart (páginas)", "Conectar datos y acciones", "Sí (watch/read)"],
-                        ["Dumb (piezas UI)", "Solo pintar y avisar eventos", "No (recibe por parámetros)"],
-                    ] } },
-            { tip: { icon: "⚡", text: "Regla #1 de rendimiento: NUNCA uses watch dentro de un onPressed. Usa read. El botón no necesita 'suscribirse' a cambios." } },
+            { h: "Proceso típico para armar una pantalla" },
+            { list: [
+                    "1. Empieza por el Scaffold (el esqueleto).",
+                    "2. Decide la estructura general: ¿una Column de secciones? ¿una ListView?",
+                    "3. Ve agregando widgets visuales (Text, Image, Icon) dentro de esa estructura.",
+                    "4. Usa Padding/SizedBox para dar 'aire' entre elementos.",
+                    "5. Conecta los widgets interactivos a funciones (onPressed, onChanged).",
+                ] },
+            { anim: "appflow" },
+            { tip: { icon: "💡", text: "Una buena práctica es dividir pantallas grandes en widgets más pequeños y con nombre (ej. _buildHeader(), o una clase aparte), igual que divides un programa en funciones." } },
         ],
         practice: [
-            {
-                title: "Encapsula bien tu provider",
-                goal: "Reescribe un provider para que la lista sea solo lectura.",
-                steps: [
-                    "Lista privada _items",
-                    "Getter que devuelva List.unmodifiable(_items)",
-                    "Método addItem que modifique y notifique",
-                ],
-                solution: `class CartProvider with ChangeNotifier {
-  final List<String> _items = [];
+            { title: "Pantalla de bienvenida", goal: "Construye una pantalla completa con Scaffold.",
+                steps: ["AppBar con título 'Mi App'", "body con Column centrada: un ícono grande y un texto de bienvenida", "Un botón debajo que diga 'Continuar'"],
+                solution: `class Bienvenida extends StatelessWidget {
+  const Bienvenida({super.key});
 
-  // Solo lectura: nadie la altera desde fuera
-  List<String> get items => List.unmodifiable(_items);
-
-  void addItem(String item) {
-    _items.add(item);
-    notifyListeners();
-  }
-
-  void clear() {
-    _items.clear();
-    notifyListeners();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mi App')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.waving_hand, size: 64),
+            const SizedBox(height: 16),
+            const Text('¡Bienvenido!'),
+            const SizedBox(height: 24),
+            ElevatedButton(onPressed: () {}, child: const Text('Continuar')),
+          ],
+        ),
+      ),
+    );
   }
 }` },
         ],
         quiz: [
-            { q: "¿Por qué exponer la lista como List.unmodifiable(_items)?", opts: ["Para que sea más rápida", "Para que nadie la modifique por fuera saltándose notifyListeners()", "Para borrarla", "Para colorearla"], correct: 1, fb: "Obliga a que todo cambio pase por tus métodos, manteniendo el control." },
-            { q: "En 'UI = f(State)', ¿quién manda sobre lo que se ve?", opts: ["La UI cambia el estado directo", "El estado define la UI; la UI solo dispara eventos", "Nadie", "El botón"], correct: 1, fb: "Flujo unidireccional: el estado baja a la UI; la UI solo emite eventos hacia arriba." },
+            { q: "¿Qué widget da el esqueleto estándar de una pantalla (appBar, body, etc.)?", opts: ["Container", "Scaffold", "MaterialApp", "Column"], correct: 1, fb: "Scaffold organiza las zonas típicas de una pantalla Material Design." },
+            { q: "¿Por qué conviene dividir una pantalla grande en widgets más pequeños?", opts: ["Para que corra más lento", "Para mantener el código organizado y reutilizable, igual que con funciones", "Es obligatorio, si no la app no compila", "No tiene ninguna ventaja"], correct: 1, fb: "Mejora legibilidad y reutilización, igual que dividir lógica en funciones." },
+        ],
+    },
+    {
+        id: "f_forms", mod: "Flutter", icon: FormInput, mins: "30 min",
+        title: "Formularios: TextField, validaciones y botones",
+        intro: "Casi toda app real pide datos al usuario: login, registro, búsqueda. Flutter da herramientas específicas para capturar y VALIDAR esos datos antes de usarlos.",
+        theory: [
+            { h: "TextField vs TextFormField" },
+            { p: "TextField es la caja de texto básica. TextFormField es lo mismo, pero pensado para vivir DENTRO de un Form, con soporte directo para reglas de validación (validator)." },
+            { code: { file: "textfield.dart", code: `final controller = TextEditingController();
+
+TextField(
+  controller: controller,
+  decoration: const InputDecoration(
+    labelText: 'Correo electrónico',
+    border: OutlineInputBorder(),
+  ),
+  onChanged: (valor) => print('Escribiendo: $valor'),
+)` } },
+            { anim: "formvalidation" },
+            { h: "Form + validación + botón: una Register Page típica" },
+            { code: { file: "register_page.dart", code: `class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Registro')),
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _emailCtrl,
+                decoration: const InputDecoration(labelText: 'Correo'),
+                validator: (valor) {
+                  if (valor == null || !valor.contains('@')) {
+                    return 'Ingresa un correo válido';
+                  }
+                  return null; // null = sin error
+                },
+              ),
+              TextFormField(
+                controller: _passCtrl,
+                obscureText: true, // oculta el texto (contraseña)
+                decoration: const InputDecoration(labelText: 'Contraseña'),
+                validator: (valor) {
+                  if (valor == null || valor.length < 6) {
+                    return 'Mínimo 6 caracteres';
+                  }
+                  return null;
+                },
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // valida TODOS los campos del Form a la vez
+                  if (_formKey.currentState!.validate()) {
+                    print('Formulario válido, registrando...');
+                  }
+                },
+                child: const Text('Registrarse'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose(); // limpia los controllers
+    _passCtrl.dispose();
+    super.dispose();
+  }
+}` } },
+            { tip: { icon: "⚠️", text: "validator debe devolver null si el campo está bien, o un String con el mensaje de error si está mal. _formKey.currentState!.validate() revisa TODOS los campos del Form de un solo golpe." } },
+        ],
+        practice: [
+            { title: "Validador de edad", goal: "Escribe solo la función validator para un campo de edad.",
+                steps: ["Recibe un String? valor", "Si está vacío o no es número o es menor a 18, regresa un mensaje", "Si está bien, regresa null"],
+                solution: `String? validarEdad(String? valor) {
+  if (valor == null || valor.isEmpty) {
+    return 'Ingresa tu edad';
+  }
+  final edad = int.tryParse(valor);
+  if (edad == null) {
+    return 'Debe ser un número';
+  }
+  if (edad < 18) {
+    return 'Debes ser mayor de edad';
+  }
+  return null; // sin error
+}` },
+        ],
+        quiz: [
+            { q: "¿Qué debe devolver una función validator cuando el campo está CORRECTO?", opts: ["true", "Un String vacío ''", "null", "false"], correct: 2, fb: "null significa 'sin error'; cualquier String se muestra como mensaje de error." },
+            { q: "¿Qué propiedad de TextFormField oculta el texto (para contraseñas)?", opts: ["hidden: true", "obscureText: true", "secure: true", "password: true"], correct: 1, fb: "obscureText: true convierte los caracteres en puntos." },
+            { q: "¿Qué hace _formKey.currentState!.validate()?", opts: ["Envía el formulario a un servidor", "Ejecuta el validator de TODOS los campos del Form a la vez", "Borra el formulario", "Crea un nuevo TextField"], correct: 1, fb: "Corre todas las reglas de validación del Form y regresa true/false." },
+        ],
+    },
+    {
+        id: "f_build_app", mod: "Flutter", icon: Workflow, mins: "25 min",
+        title: "Construcción de apps: organización, datos e interacción",
+        intro: "Para cerrar: cómo se ven TODOS estos temas trabajando juntos en una app real, de principio a fin.",
+        theory: [
+            { anim: "appflow" },
+            { h: "Organización de pantallas (navegación)" },
+            { code: { file: "navegacion.dart", code: `// Ir a otra pantalla
+Navigator.push(
+  context,
+  MaterialPageRoute(builder: (_) => const DetallePage()),
+);
+
+// Regresar
+Navigator.pop(context);` } },
+            { h: "Manejo de datos" },
+            { p: "Los datos suelen venir de una API (JSON → factory fromJson, como vimos en Dart), se guardan en un gestor de estado (Provider, Riverpod, Bloc...) y de ahí las pantallas los leen con watch/read o equivalentes." },
+            { h: "Interacción usuario-app: el ciclo completo" },
+            { list: [
+                    "1. El usuario toca un botón (widget interactivo).",
+                    "2. Se llama una función (onPressed) que cambia el estado.",
+                    "3. setState() / notifyListeners() avisa del cambio.",
+                    "4. Flutter llama build() de nuevo con los datos actualizados.",
+                    "5. La pantalla se ve distinta — el usuario ve el resultado.",
+                ] },
+            { tip: { icon: "✓", text: "Este ciclo (widgets → estado → reconstrucción → UI) es el corazón de TODO lo visto en este curso. Si lo entiendes, entiendes Flutter." } },
+        ],
+        practice: [
+            { title: "Diseña el flujo de una mini app", goal: "Piensa una app de 'Lista de tareas' y describe (en comentarios) su organización.",
+                steps: ["¿Qué pantallas tiene?", "¿Dónde vive el estado (la lista de tareas)?", "¿Qué pasa paso a paso cuando el usuario agrega una tarea?"],
+                solution: `// Pantallas: HomePage (lista) y AddTaskPage (formulario)
+// Estado: TareasProvider (ChangeNotifier) con List<Tarea>
+//
+// Flujo al agregar una tarea:
+// 1. Usuario llena un TextFormField en AddTaskPage y toca "Guardar"
+// 2. onPressed valida el Form y llama
+//    context.read<TareasProvider>().agregar(nuevaTarea)
+// 3. Eso modifica la lista interna y llama notifyListeners()
+// 4. HomePage, que hace context.watch<TareasProvider>().tareas,
+//    se reconstruye sola mostrando la nueva tarea
+// 5. Navigator.pop(context) regresa a HomePage` },
+        ],
+        quiz: [
+            { q: "¿Qué función de Navigator lleva a una nueva pantalla?", opts: ["Navigator.pop()", "Navigator.push()", "Navigator.go()", "Navigator.open()"], correct: 1, fb: "push() agrega una nueva ruta encima de la pila de navegación." },
+            { q: "En el ciclo de interacción usuario-app, ¿qué pasa justo DESPUÉS de setState()/notifyListeners()?", opts: ["Se cierra la app", "Flutter vuelve a llamar build() con los datos actualizados", "Se borra el estado", "Nada, hay que reiniciar la app"], correct: 1, fb: "Notificar el cambio dispara una nueva reconstrucción de la UI." },
         ],
     },
 ];
-
 const MODS = [
     { name: "Dart", sub: "El lenguaje base", icon: Code },
-    { name: "Flutter + Provider", sub: "Manejo de estado", icon: Smartphone },
+    { name: "Flutter", sub: "Widgets, estado y UI (temas de examen)", icon: Smartphone },
 ];
 
 const RANKS = [
@@ -1008,11 +1210,28 @@ function CodeBlock({ code, file }) {
     );
 }
 
+const ANIM_MAP = {
+    widgettree: AnimWidgetTree,
+    svs: AnimStatelessVsStateful,
+    lifecycle: AnimLifecycle,
+    layout: AnimLayout,
+    stateflow: AnimStateFlow,
+    nullsafety: AnimNullSafety,
+    formvalidation: AnimFormValidation,
+    managers: AnimStateManagers,
+    setstate: AnimSetStateCounter,
+    appflow: AnimAppFlow,
+};
+
 function Theory({ blocks }) {
     return blocks.map((b, i) => {
         if (b.p) return <p key={i} className="fl-p">{b.p}</p>;
         if (b.h) return <h3 key={i} className="fl-h3">{b.h}</h3>;
         if (b.code) return <CodeBlock key={i} {...b.code} />;
+        if (b.anim) {
+            const Comp = ANIM_MAP[b.anim];
+            return Comp ? <Comp key={i} /> : null;
+        }
         if (b.tip) return (
             <div key={i} className="fl-tip"><span className="fl-tip-i">{b.tip.icon}</span><span>{b.tip.text}</span></div>
         );
@@ -1043,7 +1262,6 @@ function Exercise({ ex, n }) {
         </div>
     );
 }
-
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 .fl{ min-height:100vh; width:100%; font-family:'Inter',system-ui,sans-serif; color:#e8eef6;
@@ -1132,8 +1350,109 @@ const CSS = `
 .fl-reset:hover{ background:rgba(255,123,114,.1); }
 .fl-done-tag{ display:inline-flex; align-items:center; gap:6px; color:#5cc88a; font-family:'JetBrains Mono',monospace; font-size:12px; }
 @media(max-width:560px){ .fl-title{ font-size:32px; } .fl-lhead h2{ font-size:24px; } }
-`;
 
+/* ===== Bloque de animaciones ===== */
+.fl-anim{ background:#0c1219; border:1px solid #1a2533; border-radius:14px; padding:18px 18px 14px; margin:16px 0; }
+.fl-anim-svg{ width:100%; height:auto; display:block; }
+.fl-anim-cap{ font-size:13px; color:#9fadbd; line-height:1.55; margin:12px 0 2px; text-align:center; }
+.fl-anim-cap code{ background:#0f1620; padding:1px 6px; border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#80d0ff; }
+.fl-anim-btn{ display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:12px;
+  color:#42A5F5; background:rgba(66,165,245,.08); border:1px solid #1e2a38; border-radius:8px; padding:7px 13px; cursor:pointer; }
+.fl-anim-btn:hover{ background:rgba(66,165,245,.15); }
+
+/* Stateless vs Stateful */
+.fl-svs-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+.fl-svs-col{ flex:1; min-width:160px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.fl-svs-tag{ font-family:'JetBrains Mono',monospace; font-size:11px; color:#5d708a; letter-spacing:1px; }
+.fl-svs-box{ width:100%; min-height:74px; border-radius:12px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:6px; font-size:13px; font-weight:600; }
+.fl-svs-box.static{ background:rgba(138,152,168,.08); border:1.5px solid #2a3644; color:#bcc8d6; }
+.fl-svs-box.dynamic{ background:rgba(66,165,245,.1); border:1.5px solid #42A5F5; color:#aee0ff; }
+.fl-spin-once{ animation: fl-spin .6s ease; }
+@keyframes fl-spin{ from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
+.fl-svs-note{ font-size:12px; color:#5d708a; text-align:center; line-height:1.4; }
+
+/* Lifecycle */
+.fl-life-track{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:0; }
+.fl-life-node{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:6px 8px; opacity:.45; transition:opacity .3s; }
+.fl-life-node.active{ opacity:1; }
+.fl-life-node.past{ opacity:.75; }
+.fl-life-dot{ width:14px; height:14px; border-radius:50%; background:#1e2a38; border:2px solid #2a3644; transition:all .3s; }
+.fl-life-node.active .fl-life-dot{ background:#42A5F5; border-color:#42A5F5; box-shadow:0 0 0 5px rgba(66,165,245,.18); }
+.fl-life-node.past .fl-life-dot{ background:#5cc88a; border-color:#5cc88a; }
+.fl-life-label{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9fadbd; text-align:center; max-width:100px; }
+.fl-life-node.active .fl-life-label{ color:#aee0ff; font-weight:700; }
+.fl-life-line{ width:22px; height:2px; background:#1e2a38; margin:0 2px 22px; transition:background .3s; }
+.fl-life-line.past{ background:#5cc88a; }
+
+/* Layout demo */
+.fl-layout-tabs{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:14px; }
+.fl-layout-tab{ font-family:'JetBrains Mono',monospace; font-size:11.5px; padding:6px 12px; border-radius:8px;
+  border:1px solid #1e2a38; background:#0f1620; color:#9fadbd; cursor:pointer; }
+.fl-layout-tab.on{ border-color:#42A5F5; color:#aee0ff; background:rgba(66,165,245,.1); }
+.fl-layout-stage{ min-height:110px; display:flex; align-items:center; justify-content:center; padding:10px; }
+.fl-row-demo{ display:flex; gap:10px; align-items:stretch; width:100%; }
+.fl-col-demo{ display:flex; flex-direction:column; gap:8px; align-items:center; width:100%; max-width:160px; margin:0 auto; }
+.fl-stack-demo{ position:relative; width:140px; height:100px; margin:0 auto; }
+.fl-demo-box{ flex:1; min-height:60px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  color:#07111c; font-weight:700; font-size:13px; transition:all .35s; }
+.fl-demo-box.stacked{ position:absolute; width:90px; height:60px; transition:all .35s; }
+.fl-demo-box.expanded-flex{ flex:3; }
+.fl-col-demo .fl-demo-box{ width:100%; min-height:34px; }
+
+/* State flow */
+.fl-flow{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:6px; }
+.fl-flow-node{ font-family:'JetBrains Mono',monospace; font-size:11.5px; padding:9px 12px; border-radius:10px;
+  border:1px solid #1e2a38; background:#0f1620; color:#8a98a8; text-align:center; transition:all .3s; max-width:140px; }
+.fl-flow-node.active{ border-color:#42A5F5; background:rgba(66,165,245,.13); color:#aee0ff; transform:scale(1.05); }
+.fl-flow-arrow{ color:#5d708a; font-size:14px; }
+
+/* Null safety */
+.fl-null-row{ display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; }
+.fl-null-box{ width:140px; height:64px; border-radius:12px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:2px; transition:all .3s; }
+.fl-null-box.empty{ background:rgba(255,189,46,.08); border:1.5px dashed #ffbd2e; }
+.fl-null-box.filled{ background:rgba(92,200,138,.12); border:1.5px solid #5cc88a; }
+.fl-null-label{ font-family:'JetBrains Mono',monospace; font-size:10px; color:#5d708a; }
+.fl-null-val{ font-size:14px; font-weight:700; color:#e8eef6; }
+.fl-null-result{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:13px; color:#9fadbd; margin-top:14px; }
+
+/* Form validation */
+.fl-form-demo{ max-width:320px; margin:0 auto; }
+.fl-form-label{ display:block; font-size:12px; color:#9fadbd; margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+.fl-form-input{ width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid #1e2a38; background:#0f1620;
+  color:#e8eef6; font-size:14px; outline:none; transition:border-color .2s; }
+.fl-form-input:focus{ border-color:#42A5F5; }
+.fl-form-input.ok{ border-color:#5cc88a; }
+.fl-form-input.bad{ border-color:#ff5f56; }
+.fl-form-msg{ font-size:12px; margin-top:6px; }
+.fl-form-msg.ok{ color:#5cc88a; }
+.fl-form-msg.bad{ color:#ff7b72; }
+
+/* State managers */
+.fl-mgr-tabs{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:14px; }
+.fl-mgr-tab{ font-family:'JetBrains Mono',monospace; font-size:11.5px; padding:6px 12px; border-radius:8px;
+  border:1px solid #1e2a38; background:#0f1620; color:#9fadbd; cursor:pointer; transition:all .2s; }
+.fl-mgr-tab.on{ background:rgba(66,165,245,.1); }
+.fl-mgr-stage{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+.fl-mgr-flow{ display:flex; align-items:center; gap:14px; }
+.fl-mgr-box{ padding:12px 18px; border-radius:10px; border:1.5px solid #1e2a38; font-family:'JetBrains Mono',monospace;
+  font-size:13px; color:#e8eef6; background:#0f1620; transition:all .3s; }
+.fl-mgr-arrow{ font-size:18px; transition:color .3s; }
+
+/* setState counter */
+.fl-counter-row{ display:flex; align-items:center; justify-content:center; gap:16px; }
+.fl-counter-box{ width:64px; height:64px; border-radius:14px; background:rgba(66,165,245,.1); border:1.5px solid #42A5F5;
+  display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; color:#aee0ff; transition:transform .15s; }
+.fl-counter-box.pulse{ transform:scale(1.18); background:rgba(92,200,138,.18); border-color:#5cc88a; color:#aef0c6; }
+
+/* App flow */
+.fl-app-row{ display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
+.fl-app-screen{ display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  padding:8px 12px; border-radius:9px; border:1px solid #1e2a38; background:#0f1620; color:#9fadbd; cursor:pointer; transition:all .2s; }
+.fl-app-screen.on{ border-color:#42A5F5; background:rgba(66,165,245,.13); color:#aee0ff; }
+.fl-app-arrow{ color:#5d708a; }
+`;
 export default function App() {
     const saved = loadSave();
     const [open, setOpen] = useState(null);
@@ -1238,7 +1557,7 @@ export default function App() {
                 <div className="fl-head">
                     <div className="fl-kick">// EVOLUTIVE · MÓVIL</div>
                     <h1 className="fl-title">FLUTTER + <b>DART</b></h1>
-                    <p className="fl-sub">De cero a tu primera app móvil. Cada tema: teoría con palabras simples, práctica con soluciones y un quiz.</p>
+                    <p className="fl-sub">De cero a tu examen. Teoría con animaciones explicativas, práctica con soluciones y un quiz por lección.</p>
                 </div>
 
                 <div className="fl-rank">
