@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Shield, TrendingUp, Search, Cpu, ArrowLeft, Lock, Star,
-  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud,
+  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud, Scroll,
 } from "lucide-react";
 
 /* ============================================================
@@ -37,6 +37,7 @@ import Rock from "./rock/App.jsx";
 import Flutter from "./flutter/App.jsx";
 import Robotica from "./robotica/App.jsx";
 import IoTCloud from "./iotcloud/App.jsx";
+import Philosophy from "./philosophy/App.jsx";
 
 const HUB_KEY = "nexus_hub_v1";
 
@@ -96,6 +97,12 @@ function statIoTCloud() {
   const leidas = Object.keys(d.read).length;
   return { xp: leidas * 100, label: `${leidas} lecciones` };
 }
+function statPhilosophy() {
+  const d = read("philosophy_progress_v1");
+  const xp = d?.xp || 0;
+  const pruebas = d?.done ? Object.keys(d.done).length : 0;
+  return { xp, label: `${xp} XP · ${pruebas} ejercicios` };
+}
 
 const WORLDS = [
   { id: "cyber",  name: "CyberLab",          sub: "Hackea aprendiendo",        icon: Shield,      color: "#4dffa0", glow: "rgba(77,255,160,.5)",  Comp: CyberLab,  stat: statCyberlab },
@@ -107,6 +114,7 @@ const WORLDS = [
   { id: "flutter", name: "Flutter + Dart",     sub: "De cero a app móvil",       icon: Smartphone,  color: "#42A5F5", glow: "rgba(66,165,245,.5)",  Comp: Flutter,   stat: statFlutter },
   { id: "robotica", name: "Robótica & IoT",    sub: "De cero a tu araña robot",  icon: Bot,         color: "#ff5a1f", glow: "rgba(255,90,31,.5)",   Comp: Robotica,  stat: statRobotica },
   { id: "iotcloud", name: "IoT en la Nube",    sub: "Nivel profesional / CV",    icon: Cloud,       color: "#22d3ee", glow: "rgba(34,211,238,.5)",  Comp: IoTCloud,  stat: statIoTCloud },
+  { id: "philosophy", name: "Primer Logos",    sub: "Filosofía: del mito al logos", icon: Scroll,   color: "#9c6b9c", glow: "rgba(156,107,156,.5)", Comp: Philosophy, stat: statPhilosophy },
 ];
 
 const RANKS = [
@@ -280,7 +288,7 @@ export default function App() {
             <br />
             <button className="nx-reset" onClick={() => {
               if (window.confirm("¿Borrar TODO el progreso de TODOS los mundos? No se puede deshacer.")) {
-                ["cyberlab_progress_v1", "wsa_progress", "finstack:v1", "deductiva_progress_v1", "godot3d_progress_v1", "rock_progress_v1", "flutter_progress_v1", "robotica_progress_v1", "iotcloud_progress_v1", HUB_KEY].forEach((k) => localStorage.removeItem(k));
+                ["cyberlab_progress_v1", "wsa_progress", "finstack:v1", "deductiva_progress_v1", "godot3d_progress_v1", "rock_progress_v1", "flutter_progress_v1", "robotica_progress_v1", "iotcloud_progress_v1", "philosophy_progress_v1", HUB_KEY].forEach((k) => localStorage.removeItem(k));
                 setHub({ visited: {} }); setTick((t) => t + 1);
               }
             }}>
