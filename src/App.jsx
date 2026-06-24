@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Shield, TrendingUp, Search, Cpu, ArrowLeft, Lock, Star,
-  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud, Scroll,
+  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud, Scroll, Gamepad2,
 } from "lucide-react";
 
 /* ============================================================
@@ -38,6 +38,7 @@ import Flutter from "./flutter/App.jsx";
 import Robotica from "./robotica/App.jsx";
 import IoTCloud from "./iotcloud/App.jsx";
 import Philosophy from "./philosophy/App.jsx";
+import Motor from "./motor/App.jsx";
 
 const HUB_KEY = "nexus_hub_v1";
 
@@ -104,6 +105,13 @@ function statPhilosophy() {
   return { xp, label: `${xp} XP · ${pruebas} ejercicios` };
 }
 
+function statMotor() {
+  const d = read("motor_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
 const WORLDS = [
   { id: "cyber",  name: "CyberLab",          sub: "Hackea aprendiendo",        icon: Shield,      color: "#4dffa0", glow: "rgba(77,255,160,.5)",  Comp: CyberLab,  stat: statCyberlab },
   { id: "wall",   name: "Wall Street",       sub: "De cero a Michael Burry",   icon: TrendingUp,  color: "#d9a441", glow: "rgba(217,164,65,.5)",  Comp: WallStreet, stat: statWallStreet },
@@ -115,6 +123,7 @@ const WORLDS = [
   { id: "robotica", name: "Robótica & IoT",    sub: "De cero a tu araña robot",  icon: Bot,         color: "#ff5a1f", glow: "rgba(255,90,31,.5)",   Comp: Robotica,  stat: statRobotica },
   { id: "iotcloud", name: "IoT en la Nube",    sub: "Nivel profesional / CV",    icon: Cloud,       color: "#22d3ee", glow: "rgba(34,211,238,.5)",  Comp: IoTCloud,  stat: statIoTCloud },
   { id: "philosophy", name: "Primer Logos",    sub: "Filosofía: del mito al logos", icon: Scroll,   color: "#9c6b9c", glow: "rgba(156,107,156,.5)", Comp: Philosophy, stat: statPhilosophy },
+  { id: "motor",      name: "Motor de Juegos",  sub: "C++ & OpenGL desde cero",   icon: Gamepad2,  color: "#ff7a45", glow: "rgba(255,122,69,.5)",  Comp: Motor,      stat: statMotor },
 ];
 
 const RANKS = [
