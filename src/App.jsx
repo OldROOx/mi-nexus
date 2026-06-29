@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Shield, TrendingUp, Search, Cpu, ArrowLeft, Lock, Star,
-  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud, Scroll, Gamepad2,
+  Sparkles, Trophy, RotateCcw, Box, Disc3, Smartphone, Bot, Cloud, Scroll, Gamepad2, Clapperboard, Atom, Stethoscope, Scale, Brain, Fingerprint, Guitar, Blocks,
 } from "lucide-react";
 
 /* ============================================================
@@ -39,6 +39,14 @@ import Robotica from "./robotica/App.jsx";
 import IoTCloud from "./iotcloud/App.jsx";
 import Philosophy from "./philosophy/App.jsx";
 import Motor from "./motor/App.jsx";
+import Blender from "./blender/App.jsx";
+import Fisica from "./fisica/App.jsx";
+import Medicina from "./medicina/App.jsx";
+import Derecho from "./derecho/App.jsx";
+import Flow from "./flow/App.jsx";
+import Forense from "./forense/App.jsx";
+import Bajo from "./bajo/App.jsx";
+import Roblox from "./roblox/App.jsx";
 
 const HUB_KEY = "nexus_hub_v1";
 
@@ -105,8 +113,64 @@ function statPhilosophy() {
   return { xp, label: `${xp} XP · ${pruebas} ejercicios` };
 }
 
+function statFisica() {
+  const d = read("fisica_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statBlender() {
+  const d = read("blender_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
 function statMotor() {
   const d = read("motor_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statMedicina() {
+  const d = read("medicina_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statDerecho() {
+  const d = read("derecho_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statFlow() {
+  const d = read("flow_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statForense() {
+  const d = read("forense_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statBajo() {
+  const d = read("bajo_progress_v1");
+  if (!d || !d.read) return { xp: 0, label: "sin empezar" };
+  const leidas = Object.keys(d.read).length;
+  return { xp: leidas * 100, label: leidas + " lecciones" };
+}
+
+function statRoblox() {
+  const d = read("roblox_progress_v1");
   if (!d || !d.read) return { xp: 0, label: "sin empezar" };
   const leidas = Object.keys(d.read).length;
   return { xp: leidas * 100, label: leidas + " lecciones" };
@@ -124,6 +188,14 @@ const WORLDS = [
   { id: "iotcloud", name: "IoT en la Nube",    sub: "Nivel profesional / CV",    icon: Cloud,       color: "#22d3ee", glow: "rgba(34,211,238,.5)",  Comp: IoTCloud,  stat: statIoTCloud },
   { id: "philosophy", name: "Primer Logos",    sub: "Filosofía: del mito al logos", icon: Scroll,   color: "#9c6b9c", glow: "rgba(156,107,156,.5)", Comp: Philosophy, stat: statPhilosophy },
   { id: "motor",      name: "Motor de Juegos",  sub: "C++ & OpenGL desde cero",   icon: Gamepad2,  color: "#ff7a45", glow: "rgba(255,122,69,.5)",  Comp: Motor,      stat: statMotor },
+  { id: "blender",    name: "Blender Shooters", sub: "Animar armas en FPS (3D)",   icon: Clapperboard, color: "#e87d0d", glow: "rgba(232,125,13,.5)", Comp: Blender,    stat: statBlender },
+  { id: "fisica",     name: "Física Feynman",   sub: "De noob a pro con Feynman", icon: Atom,      color: "#f0c14b", glow: "rgba(240,193,75,.5)", Comp: Fisica,     stat: statFisica },
+  { id: "medicina",   name: "Medicina",         sub: "De cero a clínico",        icon: Stethoscope, color: "#16c79a", glow: "rgba(22,199,154,.5)", Comp: Medicina,  stat: statMedicina },
+  { id: "derecho",    name: "Derecho",          sub: "De cero a jurista",        icon: Scale,     color: "#c9a227", glow: "rgba(201,162,39,.5)", Comp: Derecho,   stat: statDerecho },
+  { id: "flow",       name: "Estado de Flow",   sub: "Concentración y hábitos",  icon: Brain,     color: "#7c6cf0", glow: "rgba(124,108,240,.5)", Comp: Flow,      stat: statFlow },
+  { id: "forense",    name: "Forense Computacional", sub: "Investiga evidencia digital", icon: Fingerprint, color: "#34d399", glow: "rgba(52,211,153,.5)", Comp: Forense, stat: statForense },
+  { id: "bajo",       name: "Bajo Eléctrico",   sub: "De cero a tu primer groove", icon: Guitar,    color: "#ec5fa8", glow: "rgba(236,95,168,.5)", Comp: Bajo,      stat: statBajo },
+  { id: "roblox",     name: "Roblox & Luau",    sub: "De cero a pro · tu juego",  icon: Blocks,    color: "#ff4d4d", glow: "rgba(255,77,77,.5)",   Comp: Roblox,     stat: statRoblox },
 ];
 
 const RANKS = [
@@ -297,7 +369,7 @@ export default function App() {
             <br />
             <button className="nx-reset" onClick={() => {
               if (window.confirm("¿Borrar TODO el progreso de TODOS los mundos? No se puede deshacer.")) {
-                ["cyberlab_progress_v1", "wsa_progress", "finstack:v1", "deductiva_progress_v1", "godot3d_progress_v1", "rock_progress_v1", "flutter_progress_v1", "robotica_progress_v1", "iotcloud_progress_v1", "philosophy_progress_v1", HUB_KEY].forEach((k) => localStorage.removeItem(k));
+                ["cyberlab_progress_v1", "wsa_progress", "finstack:v1", "deductiva_progress_v1", "godot3d_progress_v1", "rock_progress_v1", "flutter_progress_v1", "robotica_progress_v1", "iotcloud_progress_v1", "philosophy_progress_v1", "motor_progress_v1", "blender_progress_v1", "fisica_progress_v1", "medicina_progress_v1", "derecho_progress_v1", "flow_progress_v1", "forense_progress_v1", "bajo_progress_v1", "roblox_progress_v1", HUB_KEY].forEach((k) => localStorage.removeItem(k));
                 setHub({ visited: {} }); setTick((t) => t + 1);
               }
             }}>
